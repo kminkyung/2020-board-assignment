@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <% include ./layout/layout-head.ejs %>
+  <title>내 주말..</title>
+</head>
+
+<body>
+<h1 class="text-center">로그인</h1>
+
+  <div class="container border shadow-box mx-auto my-5 p-5 pb-0" style="width: 600px;">
+    <form action="/login" method="post" name="loginForm" onsubmit="return checkLoginForm(this);">
+      <div class="row mb-3">
+        <div class="col-2">
+          <label for="id">ID</label>
+        </div>
+        <div class="col-10">
+          <input type="text" class="form-control" name="id" id="id" placeholder="아이디를 입력하세요.">
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-2">
+          <label for="pw">PW</label>
+        </div>
+        <div class="col-10">
+          <input type="password" class="form-control" name="password" id="password" placeholder="••••••••">
+        </div>
+
+      </div>
+      <div class="button-container text-center mt-4">
+        <button type="submit" class="btn btn-secondary mr-2 rounded-0">로그인</button>
+        <button type="button" class="btn btn-secondary rounded-0" onclick="location.href='/signup'">회원가입</button>
+      </div>
+    </form>
+
+  </div>
+
+  <% include ./layout/layout-script.ejs %>
+  <script src="/javascripts/main.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <% include ./layout/layout-head.ejs %>
+</head>
+
+<body>
+<h1 class="text-center">계정정보</h1>
+
+<div class="container border shadow-box mx-auto my-5 p-5 pb-0" style="width: 600px;">
+    <table class="table table-bordered">
+        <tr>
+            <th>아이디</th>
+            <td id="id"><%= id %></td>
+        </tr>
+        <tr id="tr_password">
+            <th class="align-middle">비밀번호</th>
+            <td class="d-flex border-0"><button type="button" class="btn btn-sm btn-secondary rounded-0" onclick="changeInput();">비밀번호 변경</button></td>
+        </tr>
+        <tr>
+            <th>이름</th>
+            <td><%= name %></td>
+        </tr>
+        <tr>
+            <th>이메일</th>
+            <td><%= email %></td>
+        </tr>
+    </table>
+    <div class="button-container text-center mt-4">
+        <button type="button" class="btn btn-secondary rounded-0" onclick="location.href='/logout'">로그아웃</button>
+    </div>
+</div>
+
+<% include ./layout/layout-script.ejs %>
+<script src="/javascripts/home.js"></script>
+</body>
+</html>
+
