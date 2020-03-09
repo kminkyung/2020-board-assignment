@@ -8,6 +8,10 @@ a {
   color: #00B7FF;
 }
 
+.table td, .table th {
+  vertical-align: middle;
+}
+
 label {
   line-height: 2;
   font-size: 18px;
@@ -15,4 +19,8 @@ label {
 
 .shadow-box {
   box-shadow: -4px 3px 42px -6px rgba(128,128,128,0.81);
+}
+
+h1 {
+    font-weight: 600;
 }

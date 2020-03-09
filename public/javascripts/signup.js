@@ -1,23 +1,23 @@
-const checkSignUpForm = (form) => {
+const checkSignUpForm = () => {
   if($("#id").data('use') !== 'true') {
     alert("아이디를 확인하세요.");
     $("#id").focus();
-    return;
+    return false;
   }
   if($("#password").data('use') !== 'true') {
     alert("비밀번호를 확인하세요.");
     $("#password").focus();
-    return;
+    return false;
   }
   if($("#name").data('use') !== 'true') {
     alert("이름을 확인하세요.");
     $("#name").focus();
-    return;
+    return false;
   }
   if($("#email").data('use') !== 'true') {
     alert("이메일을 확인하세요.");
     $("#email").focus();
-    return;
+    return false;
   }
   return true;
 };
@@ -32,8 +32,9 @@ $("#id").on('blur', function() {
     $("#id").parent().append(comment);
     return;
   }
-  isExistID(id, function (validation) {
-    if(validation == 'false') {
+  validateID(id, function (validation) {
+    console.log(validation);
+    if(validation == false) {
       const comment = `<span class="text-secondary" id="valid_id">이미 존재하는 아이디입니다.</span>`;
       $("#id").parent().append(comment);
       return;
@@ -95,7 +96,7 @@ $("#email").on('blur', function() {
   }
 });
 
-function isExistID (id, callback) {
+function validateID(id, callback) {
   $.ajax({
     type: 'get',
     url: `/rest/get_member_id/${id}`,

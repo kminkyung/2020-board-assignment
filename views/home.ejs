@@ -5,9 +5,11 @@
 </head>
 
 <body>
-<h1 class="text-center">계정정보</h1>
+<h1 class="text-center">홈화면</h1>
 
-<div class="container border shadow-box mx-auto my-5 p-5 pb-0" style="width: 600px;">
+<div class="container border shadow-box mx-auto my-5 p-5 pb-0" style="width: 700px;">
+    <h4 class="mb-4">계정정보</h4>
+
     <table class="table table-bordered">
         <tr>
             <th>아이디</th>
@@ -27,12 +29,19 @@
         </tr>
     </table>
     <div class="button-container text-center mt-4">
-        <button type="button" class="btn btn-secondary rounded-0" onclick="location.href='/logout'">로그아웃</button>
+        <% if (grade == 9) { %>
+        <button type="button" class="btn btn-secondary rounded-0" onclick="showMemberList();">유저목록보기</button>
+        <% } %>
+        <button type="button" class="btn btn-secondary rounded-0 ml-2" onclick="location.href='/logout'">로그아웃</button>
     </div>
 </div>
 
+
+
 <% include ./layout/layout-script.ejs %>
 <script src="/javascripts/home.js"></script>
+<script>
+</script>
 </body>
 </html>
 
