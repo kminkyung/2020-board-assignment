@@ -24,12 +24,10 @@ function updatePassword (req, res, next) {
     fs.writeFile(fileName, JSON.stringify(memData), (err) => {
       if (err) console.error(err);
       else {
-        res.send(`<meta charset="utf-8"><script>alert("수정이 완료되었습니다."); location.href="/";</script>`);
+        res.send(util.alertLocation({msg: "수정이 완료되었습니다.", loc: "/"}));
       }
     });
   });
-
-
 }
 
 function getMemberId (req, res, next) {
@@ -40,6 +38,10 @@ function getMemberId (req, res, next) {
 
   fs.readFile(filePath, 'utf8', (err, data) => {
     if(err) throw err;
+    if(!data) {
+      res.send(true);
+      return;
+    }
     member = JSON.parse(data);
     const registered = member.filter(v => v.id == id);
     if(registered[0]) {
