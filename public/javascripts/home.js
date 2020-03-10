@@ -18,9 +18,12 @@ function changeGrade(btn) {
 
 function showMemberList() {
   $("#user_list_container").remove();
+  $("#btnHideList").removeClass("d-none");
+  $("#btnShowList").addClass("d-none");
   const id = $("#id").text();
+  const manage_button = `<button type="button" class="btn btn-secondary btn-sm rounded-0" onclick="changeGrade(this);">등급변경</button>`;
+  
   getMemberList(function (list) {
-    const manage_button = `<button type="button" class="btn btn-secondary btn-sm rounded-0" onclick="changeGrade(this);">등급변경</button>`;
     const code = `<div class="container border shadow-box mx-auto my-5 p-5 pb-0" id="user_list_container" style="width: 700px">
                   <h4 class="mb-4">유저목록</h4>
                   <table class="table table-bordered text-center" id="user_list_table">
@@ -49,6 +52,37 @@ function showMemberList() {
     $("body").append(code);
   });
 }
+
+function hideMemberList() {
+  $("#user_list_container").remove();
+  $("#btnHideList").addClass("d-none");
+  $("#btnShowList").removeClass("d-none");
+}
+
+function ShowBoard() {
+  const code = `<div class="container border shadow-box mx-auto my-5 p-5 pb-0" id="user_list_container" style="width: 700px">
+                  <div class="d-flex justify-content-between align-items-start">
+                    <h4 class="mb-4">게시판</h4>
+                    <button type="button" class="btn btn-secondary rounded-0" onclick="showWriteModal();">글쓰기</button>                  
+                  </div>
+            
+                  <table class="table table-bordered text-center" id="user_list_table">
+                    <thead>
+                    <tr>
+                      <th>글번호</th>
+                      <th>작성자</th>
+                      <th>제목</th>
+                      <th>작성일</th>
+                      <th>관리</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                  </table>
+              </div>`;
+    $("body").append(code);
+}
+
 
 function updatePassword() {
   const id = $("#id").text();

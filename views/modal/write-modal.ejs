@@ -1,0 +1,26 @@
+<div class="background">
+    <div class="container border p-5" id="board_write_modal">
+        <form action="/rest/write_board" method="post" name="writeForm">
+            <table class="table table-bordered text-center" id="user_list_table">
+                <tbody>
+                    <tr>
+                        <td>작성자</td>
+                        <td class="p-3"></td>
+                    </tr>
+                    <tr class="p-3">
+                        <td>제목</td>
+                        <td><input type="text" name="title" class="form-control rounded-0"></td>
+                    </tr>
+                    <tr>
+                        <td>내용</td>
+                        <td class="p-3"><textarea name="content" class="form-control rounded-0" id="" cols="30" rows="10"></textarea></td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="text-center">
+                <button type="submit" class="btn btn-secondary rounded-0 px-4">작성</button>
+                <button type="button" class="btn btn-secondary rounded-0 px-4 ml-1">취소</button>
+            </div>
+        </form>
+    </div>
+</div>

@@ -13,26 +13,30 @@ module.exports.alertLocation = (obj) => {
 
 
 
-// module.exports.checkFile = (path, callback) => {
-// 	fs.stat(path, (err, stats) => {
-// 		if(err && err.code == 'ENOENT') return callback(null, true); /
-// 		if(err) return callback(err);
-//
-// 		return callback(null, !stats.isDirectory());
-// 		// 암튼 위의 if문을 통과했다면 err 없고, 폴더가 없으면 띄우는 에러가 안떴다는, 즉 폴더가 있다는 말이니까
-// 		// callback으로 err: null, isDirectory(): false를 돌려줌
-// 	});
-// };
-//
-// module.exports.updateFile = (path, content, callback) => {
-//   fs.readFile(filePath, 'utf8', (err, content) => {
-//     if(err) throw err;
-//   });
-// 	fs.writeFile(path, content, 'utf8', (err) => {
-// 		if(err) return callback(err);
-// 		callback(true); // 여기까지 왔다면 err 없이 파일이 생성됐으므로 callback으로 err: null을 보낸다.
-// 	});
-// };
+module.exports.checkFile = (path) => {
+  console.log("체크 파일");
+	fs.stat(path, (err, stats) => {
+		if(err && err.code == 'ENOENT') return true; // 파일 존재하지 않음 -> 새로 만들어도 됨 true
+		if(err) return err;
+		return false; // 파일 있음 -> false
+	});
+};
+
+module.exports.getFileContent = (path, callback) => {
+  console.log("파일 읽기");
+  fs.readFile(path, 'utf8', (err, content) => {
+    if (err) callback(err); // 파일읽기 실패
+    callback(JSON.parse(content));
+  });
+}
+  module.exports.writeFile = (path, content, callback) => {
+    console.log("파일 쓰기");
+    fs.writeFile(path, JSON.stringify(content), 'utf8', (err, data) => {
+      if (err) callback(err); // 파일 쓰기 실패
+      callback(true);
+    });
+  }
+  
 
 
 

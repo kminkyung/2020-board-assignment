@@ -11,6 +11,7 @@ const filePath = path.join(__dirname, '..', fileName);
 /* main login page */
 router.post('/update_member_password', updatePassword);
 router.post('/update_member_grade', updateGrade);
+router.post('/write_board', writeBoard);
 router.get('/get_member_id/:id', getMemberId);
 router.get('/get_member_list', getMemberList);
 
@@ -42,7 +43,7 @@ function updateGrade(req, res, next) {
     const memData = JSON.parse(data);
     memData.map(v => {
       if(v.id == id) {
-        v.grade = grade;
+        v.grade = parseInt(grade);
       }
     });
     fs.writeFile(fileName, JSON.stringify(memData), (err) => {
@@ -52,6 +53,10 @@ function updateGrade(req, res, next) {
       }
     });
   });
+}
+
+function writeBoard(req, res, next) {
+
 }
 
 

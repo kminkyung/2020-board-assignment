@@ -30,13 +30,15 @@
     </table>
     <div class="button-container text-center mt-4">
         <% if (grade == 9) { %>
-        <button type="button" class="btn btn-secondary rounded-0" onclick="showMemberList();">유저목록보기</button>
+        <button type="button" id="btnShowList" class="btn btn-secondary rounded-0" onclick="showMemberList();">유저목록보기</button>
+        <button type="button" id="btnHideList" class="btn btn-secondary rounded-0 d-none" onclick="hideMemberList();">유저목록숨기기</button>
         <% } %>
+        <button type="button" id="btnShowBoard" class="btn btn-secondary rounded-0 ml-2" onclick="ShowBoard();">게시판 보기</button>
         <button type="button" class="btn btn-secondary rounded-0 ml-2" onclick="location.href='/logout'">로그아웃</button>
     </div>
 </div>
 
-
+<% include ./modal/write-modal.ejs %>
 
 <% include ./layout/layout-script.ejs %>
 <script src="/javascripts/home.js"></script>

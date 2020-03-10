@@ -29,38 +29,38 @@ function getMainPage(req, res, next) {
 function loginMember (req, res, next) {
    const {id, password} = req.body;
     const filePath = path.join(__dirname, '..', 'member.json');
-    
-    fs.open(filePath, 'a+', (err, fd) => {
-      if(err) throw err;
-      fs.readFile(filePath, 'utf8', (err, data) => {
+
+    if(!util.checkFile(filePath)) {
+      util.getFileContent(filePath, (data) => {
         if(!data) {
-          res.send(`<meta charset="utf-8"><script>alert("등록되지 않은 아이디이거나 비밀번호가 일치하지 않습니다."); location.href="/";</script>`);
+          res.send(util.alertLocation({msg: "등록되지 않은 아이디이거나 비밀번호가 일치하지 않습니다.", loc: "/"}));
           return;
         }
         else {
-          const memData = JSON.parse(data);
+          const memData = data;
           // console.log('memData: ', memData);
           const registered = memData.filter(v => v.id == id);
           // console.log('registered: ', registered);
           if (registered.length == 0 || registered[0].id !== id || registered[0].password !== password) {
-              res.send(`<meta charset="utf-8"><script>alert("등록되지 않은 아이디이거나 비밀번호가 일치하지 않습니다."); location.href="/";</script>`);
+            res.send(util.alertLocation({msg: "등록되지 않은 아이디이거나 비밀번호가 일치하지 않습니다.", loc: "/"}));
           }
           else {
-              req.session.user = {
-                  id: registered[0].id,
-                  password: registered[0].password,
-                  name: registered[0].name,
-                  email: registered[0].email,
-                  grade: registered[0].grade
-              };
-              loginUser = req.session.user;
-              res.render('home', loginUser);
+            req.session.user = {
+              id: registered[0].id,
+              password: registered[0].password,
+              name: registered[0].name,
+              email: registered[0].email,
+              grade: registered[0].grade
+            };
+            loginUser = req.session.user;
+            res.render('home', loginUser);
           }
         }
-
-    });
-
-    });
+      })
+    }
+    else {
+      res.send(util.alertLocation({msg: "서버 오류", loc: "/"}));
+    }
 }
 
 function logoutMember(req, res, next) {
