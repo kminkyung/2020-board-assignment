@@ -5,4 +5,5 @@ const getRegExp = (type) => {
   regExp.name = /^[가-힣]{2,8}$/;
   regExp.email = /^[0-9a-zA-Z]([-_.]?[0-9a-zA-Z])*@[0-9a-zA-Z]([-_.]?[0-9a-zA-Z])*.[a-zA-Z]{2,3}$/i;
   return regExp[type];
+  
 };

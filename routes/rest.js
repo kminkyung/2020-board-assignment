@@ -14,8 +14,10 @@ router.post('/update_member_grade', updateGrade);
 router.get('/get_member_id/:id', getMemberId);
 router.get('/get_member_list', getMemberList);
 
+
 function updatePassword(req, res, next) {
   const {id, password} = req.body;
+  
   fs.readFile(filePath, 'utf8', (err, data) => {
     if (err) throw err;
     const memData = JSON.parse(data);

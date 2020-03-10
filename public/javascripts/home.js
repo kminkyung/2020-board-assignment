@@ -21,7 +21,7 @@ function showMemberList() {
   const id = $("#id").text();
   getMemberList(function (list) {
     const manage_button = `<button type="button" class="btn btn-secondary btn-sm rounded-0" onclick="changeGrade(this);">등급변경</button>`;
-    const code = `<div class="container border shadow-box mx-auto my-5 p-5 pb-0" id="user_list_container" style="width: 700px;">
+    const code = `<div class="container border shadow-box mx-auto my-5 p-5 pb-0" id="user_list_container" style="width: 700px">
                   <h4 class="mb-4">유저목록</h4>
                   <table class="table table-bordered text-center" id="user_list_table">
                     <thead>
@@ -34,7 +34,7 @@ function showMemberList() {
                     </tr>
                     </thead>
                     <tbody>
-      ${list.map(v => `<tr>
+    ${list.map(v => `<tr>
                         <td>${v.id}</td>
                         <td>${v.name}</td>
                         <td>${v.email}</td>
@@ -42,7 +42,7 @@ function showMemberList() {
                         <td data-id="${v.id}">
                           ${v.id !== id ? manage_button : ''}
                         </td>
-                       </tr>`)}
+                       </tr>`).reduce((a, b) => a+b)}
                     </tbody>
                   </table>
               </div>`;
