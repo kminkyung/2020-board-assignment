@@ -43,7 +43,7 @@ function joinMember(req, res, next) {
       if(!data) { // 파일이 존재하지만 member data 없음
         member.push(info);
         util.writeFile(filePath, member, (result) => {
-          if(!result) console.error(result);;
+          if(!result) console.error(result);
           res.send(util.alertLocation({msg: "가입되었습니다.", loc: "/"}));
           return;
         })
