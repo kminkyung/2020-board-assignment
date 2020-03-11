@@ -74,11 +74,3 @@ textarea {
 }
 
 
-#board_write_modal {
-  background-color: #fff;
-  width: 700px;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}

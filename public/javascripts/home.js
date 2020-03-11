@@ -60,6 +60,7 @@ function hideMemberList() {
 }
 
 function ShowBoard() {
+  $("#user_list_container").remove();
   const code = `<div class="container border shadow-box mx-auto my-5 p-5 pb-0" id="user_list_container" style="width: 700px">
                   <div class="d-flex justify-content-between align-items-start">
                     <h4 class="mb-4">게시판</h4>
@@ -81,6 +82,10 @@ function ShowBoard() {
                   </table>
               </div>`;
     $("body").append(code);
+}
+
+function showWriteModal() {
+  $("#board_write_modal").modal("show");
 }
 
 
