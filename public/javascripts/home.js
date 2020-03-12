@@ -1,3 +1,10 @@
+/* event */
+$("#board_detail_modal").on("hide.bs.modal", function () {
+  $("#btnUpdate").addClass("d-none");
+  $("#btnModify").removeClass("d-none");
+});
+
+
 function changeInput() {
   const code = `<input type="password" class="form-control rounded-0" id="password" name="password">
                 <button type="button" class="btn btn-secondary rounded-0 ml-2" onclick="updatePassword();">변경</button>`;
@@ -22,7 +29,7 @@ function showMemberList() {
   $("#btnShowList").addClass("d-none");
   const id = $("#id").text();
   const manage_button = `<button type="button" class="btn btn-secondary btn-sm rounded-0" onclick="changeGrade(this);">등급변경</button>`;
-  
+
   getMemberList(function (list) {
     const code = `<div class="container border shadow-box mx-auto my-5 p-5 pb-0" id="user_list_container" style="width: 700px">
                   <h4 class="mb-4">유저목록</h4>
@@ -51,6 +58,7 @@ function showMemberList() {
               </div>`;
     $("body").append(code);
   });
+
 }
 
 function hideMemberList() {
@@ -65,12 +73,20 @@ function hideBoard() {
   $("#btnShowBoard").removeClass("d-none");
 }
 
+// const range = (size, start) => [...Array(size)].map((v, i) => i + start);
+
 function ShowBoard() {
   $("#board_list_container").remove();
   $("#btnHideBoard").removeClass("d-none");
   $("#btnShowBoard").addClass("d-none");
+  const remove_btn_code =  `<button type="button" class="btn btn-secondary btn-sm rounded-0" id="btnRemove" onclick="confirmRemovePost(this);">삭제</button>`;
+  const showmore_btn_code =  `<div class="text-center"><button type="button" class="btn btn-secondary rounded-0" id="btnShowMore" onclick="showMoreList()">더 보기</button></div>`;
   getBoardList(data => {
+    if(data.length >= 10) {
+      data = data.splice(0, 10);
+    }
     data.sort((a, b) => b.idx - a.idx);
+    console.log(data);
     const code = `<div class="container border shadow-box mx-auto my-5 p-5 pb-0" id="board_list_container" style="width: 700px">
                   <div class="d-flex justify-content-between align-items-start">
                     <h4 class="mb-4">게시판</h4>
@@ -104,14 +120,57 @@ function ShowBoard() {
                                           <td>${v.title}</td>
                                           <td>${v.content}</td>
                                           <td>${v.date}</td>
-                                          <td>
-                                            <button type="button" class="btn btn-secondary btn-sm rounded-0" onclick="confirmRemovePost(this);">삭제</button>
+                                          <td> 
+                                            ${grade == 9 ? remove_btn_code : id == v.id ? remove_btn_code : ''}
                                           </td>
                                         </tr>`);
       $("#board_list_table tbody").append(tbody_code);
     }
+    if(data.length >= 10) {
+      $("#board_list_container").append(showmore_btn_code);
+    }
   });
 }
+
+function showMoreList() {
+  let last_index = parseInt($("#board_list_table tr").length) - 1;
+  // console.log(last_index);
+  if(last_index < 10) {
+    return;
+  }
+  getBoardList(data => {
+    let list = data.splice(last_index, last_index * 2);
+  })
+
+}
+
+
+function modifyPost(btn) {
+  const title_val = $(btn).parents("#board_detail_modal").find("#title").text();
+  const content_val = $(btn).parents("#board_detail_modal").find("#content").text();
+  $(btn).parents("#board_detail_modal").find("#title").html(`<input type='text' class="form-control rounded-0" name="title">`);
+  $(btn).parents("#board_detail_modal").find("#content").html(`<textarea class="form-control rounded-0" name="content" rows="6"></textarea>`);
+  $("input[name='title']").val(title_val);
+  $("textarea[name='content']").val(content_val);
+  $("#btnUpdate").removeClass("d-none");
+  $("#btnModify").addClass("d-none");
+}
+
+function submitUpdatePost(form) {
+  const title = $(form).find("input[name='title']").val();
+  const content = $(form).find("textarea[name='content']").val();
+  if(title.trim() == '') {
+    alert("제목을 입력해주세요.");
+    return false;
+  }
+  if(content.trim() == '') {
+    alert("내용을 입력해주세요.");
+    return false;
+  }
+  return true;
+}
+
+
 
 function confirmRemovePost(t) {
   event.stopPropagation();
@@ -119,11 +178,12 @@ function confirmRemovePost(t) {
   const id = $(t).parents("tr").children("td:nth-child(2)").text();
   if(confirm("정말로 삭제하시겠습니까?")) {
     removePost(idx, id,function (res) {
-      if(!res) {
+      if(res.code !== 200) {
           alert("문제가 발생했습니다.");
           return;
       }
       alert("삭제되었습니다.");
+      location.reload();
     })
   }
 }
@@ -149,13 +209,22 @@ function showWriteModal() {
 
 function showDetailModal(tr) {
   const idx = $(tr).children("td:first-child").data("idx");
-  const id = $(tr).children("td:nth-child(2)").text();
-  getBoardPost(id, idx, function (data) {
+  const user_id = $(tr).children("td:nth-child(2)").text();
+  getBoardPost(user_id, idx, function (data) {
     $("#board_detail_modal").find("#userid").text(data.id);
+    $("#board_detail_modal").find("#id").val(data.id);
+    $("#board_detail_modal").find("#idx").val(data.idx);
     $("#board_detail_modal").find("#date").text(data.date);
     $("#board_detail_modal").find("#title").text(data.title);
     $("#board_detail_modal").find("#content").text(data.content);
+
+    if(grade == 9 || id == data.id) {
+      $("#btnModify").removeClass("d-none");
+    } else {
+      $("#btnModify").addClass("d-none");
+    }
   });
+
   $("#board_detail_modal").modal("show");
 }
 

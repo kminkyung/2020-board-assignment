@@ -8,34 +8,37 @@
         </button>
       </div>
       <div class="modal-body p-4">
+        <form action="/rest/update_board" method="post" name="updateForm" autocomplete="off" onsubmit="return submitUpdatePost(this);">
           <table class="table table-bordered text-left" id="detail_table">
+            <input type="hidden" name="id" id="id">
+            <input type="hidden" name="idx" id="idx">
             <tbody>
             <tr>
-              <td class="pl-4">작성자</td>
+              <th class="pl-4 w-25">작성자</th>
               <td class="p-3" id="userid">
-                <input type="hidden" name="id" value="<%= id %>">
               </td>
             </tr>
             <tr>
-              <td class="pl-4">작성일</td>
+              <th class="pl-4">작성일</th>
               <td class="p-3" id="date"></td>
             </tr>
             <tr class="p-3">
-              <td class="pl-4">제목</td>
-              <td id="title"></td>
+              <th class="pl-4">제목</th>
+              <td class="p-3" id="title"></td>
             </tr>
             <tr>
-              <td class="pl-4">내용</td>
+              <th class="pl-4">내용</th>
               <td class="p-3" id="content"></td>
             </tr>
             </tbody>
           </table>
           <div class="modal-footer border-0 text-center justify-content-center">
-            <button type="submit" class="btn btn-secondary rounded-0 px-4" onclick="modifyPost()">수정</button>
+            <button type="button" class="btn btn-secondary rounded-0 px-4" id="btnModify" onclick="modifyPost(this);">수정</button>
+            <button type="submit" class="btn btn-secondary rounded-0 px-4 d-none" id="btnUpdate">확인</button>
             <button type="button" class="btn btn-secondary rounded-0 px-4 ml-1" data-dismiss="modal">취소</button>
           </div>
+        </form>
       </div>
-
     </div>
   </div>
 </div>

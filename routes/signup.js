@@ -34,7 +34,7 @@ function joinMember(req, res, next) {
     member.push(info);
     util.writeFile(filePath, member, (result) => {
       if(!result) console.error(result);
-      res.send(util.alertLocation({msg: "가입되었습니다.", loc: "/"}));
+      res.send(util.alertLocation({msg: "가입되었습니다.", loc: "/home"}));
       return;
     })
   }

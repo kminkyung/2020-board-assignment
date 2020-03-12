@@ -18,6 +18,7 @@ function getMainPage(req, res, next) {
     if(req.session.user) {
         loginUser = req.session.user;
         res.render('home', loginUser);
+        return;
     }
     else {
         res.render('main');

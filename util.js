@@ -7,14 +7,12 @@ module.exports.alertLocation = (obj) => {
                   alert("${obj.msg}");
                   location.href = "${obj.loc}";
                 </script>`;
-  console.log(html);
   return html;
 };
 
 
 
 module.exports.checkFile = (path) => {
-  console.log("체크 파일");
 	fs.stat(path, (err, stats) => {
 		if(err && err.code == 'ENOENT') return true; // 파일 존재하지 않음 -> 새로 만들어도 됨 true
 		if(err) return err;

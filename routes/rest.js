@@ -10,14 +10,15 @@ const boardFile = 'board.json';
 const boardPath = path.join(__dirname, '..', boardFile);
 
 /* main login page */
-router.post('/update_member_password', updatePassword);
-router.post('/update_member_grade', updateGrade);
-router.post('/write_board', writeBoard);
 router.get('/get_member_id/:id', getMemberId);
 router.get('/get_member_list', getMemberList);
-router.get('/get_board_list', getBoardList);
 router.get('/get_board_post/:idx', getBoardPost);
+router.get('/get_board_list', getBoardList);
+router.post('/update_member_grade', updateGrade);
+router.post('/update_member_password', updatePassword);
+router.post('/write_board', writeBoard);
 router.post('/remove_board_post/:idx', removeBoardPost);
+router.post('/update_board', updateBoardPost);
 
 
 function updatePassword(req, res, next) {
@@ -107,11 +108,11 @@ function getMemberId(req, res, next) {
   let member = [];
 
   util.getFileContent(memberPath, (data) => {
-    if(!data) {
+    if(data.length == 0) {
       res.send(true);
       return;
     }
-    member = JSON.parse(data);
+    member = data;
     const registered = member.filter(v => v.id == id);
     if(registered[0]) {
       res.send(false);
@@ -148,21 +149,35 @@ function getBoardPost(req, res, next) {
 function removeBoardPost(req, res, next) {
   const idx = req.params.idx;
   const id = req.body.id; // 필요없을 수도
-  console.log(idx, id);
   util.getFileContent(boardPath, (data) => {
     if(!data) console.error(data);
-    for(let i=0; i<data.length; i++) {
-      if(data[i].idx == idx) {
-        console.log(data[i]);
-      }
-    }
-    // console.log(post_idx);
-    // console.log(data);
-    // res.json(post[0]);
+    const removeIndex = data.findIndex(v => v.idx == idx);
+    data.splice(removeIndex, 1);
+    util.writeFile(boardPath, data, function (result) {
+      if(!result) console.error(result);
+      res.send({code : 200});
+    })
   })
-  
-  
-  
+}
+
+function updateBoardPost(req, res, next) {
+  const {id, idx, title, content} = req.body;
+  util.getFileContent(boardPath, (data) => {
+    data.map(v => {
+      if(v.idx == idx) {
+        v.title = title;
+        v.content = content;
+      }
+    });
+    util.writeFile(boardPath, data, (result) => {
+      if(!result) console.error(result);
+      res.send(`<meta charset="utf-8">
+                  <script>
+                    alert("수정이 완료되었습니다.");
+                    location.href = "/";
+                  </script>`);
+    });
+  })
 }
 
 
