@@ -70,6 +70,7 @@ function ShowBoard() {
   $("#btnHideBoard").removeClass("d-none");
   $("#btnShowBoard").addClass("d-none");
   getBoardList(data => {
+    data.sort((a, b) => b.idx - a.idx);
     const code = `<div class="container border shadow-box mx-auto my-5 p-5 pb-0" id="board_list_container" style="width: 700px">
                   <div class="d-flex justify-content-between align-items-start">
                     <h4 class="mb-4">게시판</h4>
@@ -79,12 +80,12 @@ function ShowBoard() {
                   <table class="table table-bordered text-center table-ellipsis" id="board_list_table">
                     <thead>
                     <tr>
-                      <th width="50">No.</th>
+                      <th width="40">No.</th>
                       <th>작성자</th>
                       <th>제목</th>
                       <th>내용</th>
                       <th>작성일</th>
-                      <th>관리</th>
+                      <th width="70">관리</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -104,8 +105,7 @@ function ShowBoard() {
                                           <td>${v.content}</td>
                                           <td>${v.date}</td>
                                           <td>
-                                            <button type="button" class="btn btn-secondary btn-sm rounded-0" onclick="modifyPost();">수정</button>
-                                            <button type="button" class="btn btn-secondary btn-sm rounded-0" onclick="removePost();">삭제</button>
+                                            <button type="button" class="btn btn-secondary btn-sm rounded-0" onclick="confirmRemovePost(this);">삭제</button>
                                           </td>
                                         </tr>`);
       $("#board_list_table tbody").append(tbody_code);
@@ -113,11 +113,26 @@ function ShowBoard() {
   });
 }
 
+function confirmRemovePost(t) {
+  event.stopPropagation();
+  const idx = $(t).parents("tr").children("td:first-child").data("idx");
+  const id = $(t).parents("tr").children("td:nth-child(2)").text();
+  if(confirm("정말로 삭제하시겠습니까?")) {
+    removePost(idx, id,function (res) {
+      if(!res) {
+          alert("문제가 발생했습니다.");
+          return;
+      }
+      alert("삭제되었습니다.");
+    })
+  }
+}
 
-function getBoardList(callback) {
-  $.ajax({
-    type: 'get',
-    url: "/rest/get_board_list",
+function removePost(idx, id, callback) {
+    $.ajax({
+    type: 'post',
+    url: `/rest/remove_board_post/${idx}`,
+    data: {id},
     error: function(err) {
       console.log(err);
     },
@@ -136,7 +151,6 @@ function showDetailModal(tr) {
   const idx = $(tr).children("td:first-child").data("idx");
   const id = $(tr).children("td:nth-child(2)").text();
   getBoardPost(id, idx, function (data) {
-    console.log(data);
     $("#board_detail_modal").find("#userid").text(data.id);
     $("#board_detail_modal").find("#date").text(data.date);
     $("#board_detail_modal").find("#title").text(data.title);
@@ -144,21 +158,6 @@ function showDetailModal(tr) {
   });
   $("#board_detail_modal").modal("show");
 }
-
-function getBoardPost(id, idx, callback) {
-    $.ajax({
-    type: 'get',
-    url: `/rest/get_board_post/${idx}`,
-    data: {id},
-    error: function(err) {
-      console.log(err);
-    },
-    success: function(res) {
-      callback(res);
-    }
-  });
-}
-
 
 
 
@@ -176,6 +175,48 @@ function submitWriteForm() {
   return true;
 }
 
+
+function getBoardList(callback) {
+  $.ajax({
+    type: 'get',
+    url: "/rest/get_board_list",
+    error: function(err) {
+      console.log(err);
+    },
+    success: function(res) {
+      callback(res);
+    }
+  })
+}
+
+function getBoardPost(id, idx, callback) {
+    $.ajax({
+    type: 'get',
+    url: `/rest/get_board_post/${idx}`,
+    data: {id},
+    error: function(err) {
+      console.log(err);
+    },
+    success: function(res) {
+      callback(res);
+    }
+  });
+}
+
+function getMemberList(callback) {
+  $.ajax({
+    type: 'get',
+    url: "/rest/get_member_list",
+    error: function(err) {
+      callback(false);
+    },
+    success: function(res) {
+      callback(res);
+    }
+  });
+}
+
+
 function updatePassword() {
   const id = $("#id").text();
   const password = $("#password").val().trim();
@@ -192,24 +233,10 @@ function updatePassword() {
       console.log(err);
     },
     success: function(res) {
-      // console.log(res);
       alert("비밀번호가 변경되었습니다.");
       location.href = '/';
     }
   })
-}
-
-function getMemberList(callback) {
-  $.ajax({
-    type: 'get',
-    url: "/rest/get_member_list",
-    error: function(err) {
-      callback(false);
-    },
-    success: function(res) {
-      callback(res);
-    }
-  });
 }
 
 function updateGrade(btn) {

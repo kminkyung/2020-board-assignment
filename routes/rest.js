@@ -17,6 +17,7 @@ router.get('/get_member_id/:id', getMemberId);
 router.get('/get_member_list', getMemberList);
 router.get('/get_board_list', getBoardList);
 router.get('/get_board_post/:idx', getBoardPost);
+router.post('/remove_board_post/:idx', removeBoardPost);
 
 
 function updatePassword(req, res, next) {
@@ -136,7 +137,7 @@ function getBoardList(req, res, next) {
 
 function getBoardPost(req, res, next) {
   const idx = req.params.idx;
-  const id = req.body.id;
+  const id = req.body.id; // 필요없을 수도
   util.getFileContent(boardPath, (data) => {
     if(!data) console.error(data);
     const post = data.filter(v => v.idx == idx);
@@ -144,6 +145,25 @@ function getBoardPost(req, res, next) {
   })
 }
 
+function removeBoardPost(req, res, next) {
+  const idx = req.params.idx;
+  const id = req.body.id; // 필요없을 수도
+  console.log(idx, id);
+  util.getFileContent(boardPath, (data) => {
+    if(!data) console.error(data);
+    for(let i=0; i<data.length; i++) {
+      if(data[i].idx == idx) {
+        console.log(data[i]);
+      }
+    }
+    // console.log(post_idx);
+    // console.log(data);
+    // res.json(post[0]);
+  })
+  
+  
+  
+}
 
 
 
