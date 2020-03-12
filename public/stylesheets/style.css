@@ -57,6 +57,14 @@ textarea {
   vertical-align: middle !important;
 }
 
+.table.table-ellipsis { table-layout: fixed; }
+
+.table.table-ellipsis td {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .shadow-box {
   box-shadow: -4px 3px 42px -6px rgba(128,128,128,0.81);
 }

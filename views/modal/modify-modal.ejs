@@ -1,4 +1,4 @@
-<div class="modal" id="board_write_modal" tabindex="-1" role="dialog">
+<div class="modal" id="board_modify_modal" tabindex="-1" role="dialog">
   <div class="modal-dialog" role="document">
     <div class="modal-content px-3 py-2">
       <div class="modal-header border-0">
@@ -8,8 +8,8 @@
         </button>
       </div>
       <div class="modal-body p-4">
-        <form action="/rest/write_board" method="post" name="writeForm" autocomplete="off" onsubmit="return submitWriteForm();">
-          <table class="table table-bordered text-center" id="write_table">
+        <form action="/rest/modify_board" method="post" name="modifyForm" autocomplete="off" onsubmit="return submitWriteForm();">
+          <table class="table table-bordered text-center" id="modify_table">
             <tbody>
             <tr>
               <td>작성자</td>

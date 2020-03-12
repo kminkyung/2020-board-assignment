@@ -70,18 +70,16 @@ function ShowBoard() {
   $("#btnHideBoard").removeClass("d-none");
   $("#btnShowBoard").addClass("d-none");
   getBoardList(data => {
-    // data가 없을 경우 예외처리 할 것
-
     const code = `<div class="container border shadow-box mx-auto my-5 p-5 pb-0" id="board_list_container" style="width: 700px">
                   <div class="d-flex justify-content-between align-items-start">
                     <h4 class="mb-4">게시판</h4>
-                    <button type="button" class="btn btn-secondary rounded-0" onclick="showWriteModal();">글쓰기</button>                  
+                    <button type="button" class="btn btn-secondary rounded-0" onclick="showWriteModal();">글쓰기</button>
                   </div>
             
-                  <table class="table table-bordered text-center" id="user_list_table">
+                  <table class="table table-bordered text-center table-ellipsis" id="board_list_table">
                     <thead>
                     <tr>
-                      <th>글번호</th>
+                      <th width="50">No.</th>
                       <th>작성자</th>
                       <th>제목</th>
                       <th>내용</th>
@@ -90,24 +88,31 @@ function ShowBoard() {
                     </tr>
                     </thead>
                     <tbody>
-                    ${data.length == 0 ? $("body").append(`<div>데이터가 없습니다.</div>`) :
-                    data.map(v => `
-                    <tr>
-                      <td>${v.idx}</td>
-                      <td>${v.id}</td>
-                      <td>${v.title}</td>
-                      <td>${v.content}</td>
-                      <td>${v.date}</td>
-                      <td></td>
-                    </tr> 
-                    `).reduce((a, b) => a+b)}
                     </tbody>
                   </table>
               </div>`;
     $("body").append(code);
-
+    $("#board_list_table tbody").empty();
+    if(data.length == 0) {
+      $("#board_list_table tbody").append(`<tr><td colspan="6">게시글이 없습니다.</td></tr>`);
+    }
+    else {
+      const tbody_code = data.map(v => `<tr class="pointer" onclick="showDetailModal(this);">
+                                          <td>${v.idx}</td>
+                                          <td>${v.id}</td>
+                                          <td>${v.title}</td>
+                                          <td>${v.content}</td>
+                                          <td>${v.date}</td>
+                                          <td>
+                                            <button type="button" class="btn btn-secondary btn-sm rounded-0" onclick="modifyPost();">수정</button>
+                                            <button type="button" class="btn btn-secondary btn-sm rounded-0" onclick="removePost();">삭제</button>
+                                          </td>
+                                        </tr>`);
+      $("#board_list_table tbody").append(tbody_code);
+    }
   });
 }
+
 
 function getBoardList(callback) {
   $.ajax({
@@ -127,10 +132,28 @@ function showWriteModal() {
   $("#board_write_modal").modal("show");
 }
 
+function showDetailModal(tr) {
+  console.log($(tr));
+  
+  $.ajax({
+    type: 'get',
+    url: "/rest/get_board_list",
+    error: function(err) {
+      console.log(err);
+    },
+    success: function(res) {
+      callback(res);
+    }
+  });
+  
+  $("#board_detail_modal").modal("show");
+
+}
+
 
 function submitWriteForm() {
-  const title = $("#user_list_table").find("input[name='title']").val();
-  const content = $("#user_list_table").find("textarea[name='content']").val();
+  const title = $("#write_table").find("input[name='title']").val();
+  const content = $("#write_table").find("textarea[name='content']").val();
   if(title.trim() == '') {
     alert("제목을 입력해주세요.");
     return false;
@@ -195,3 +218,6 @@ function updateGrade(btn) {
     }
   });
 }
+
+
+

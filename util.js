@@ -42,7 +42,7 @@ module.exports.convertDate = (d, type) => {
   typeof type !== 'undefined' ? type : 0;
   const monthArr = ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"];
   //for (var i=1; i = monthArr; i++) { i+"월"}
-  const year = d.getFullYear() + "년"; // 2019
+  const year = d.getFullYear() + "년 "; // 2019
   const month = monthArr[d.getMonth()] + " "; // 7 (0~11)배열
   const day = d.getDate() + "일"; // 1 ~ 31
   const hour = d.getHours() + "시"; // 0 ~ 23
