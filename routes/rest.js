@@ -16,6 +16,7 @@ router.post('/write_board', writeBoard);
 router.get('/get_member_id/:id', getMemberId);
 router.get('/get_member_list', getMemberList);
 router.get('/get_board_list', getBoardList);
+router.get('/get_board_post/:idx', getBoardPost);
 
 
 function updatePassword(req, res, next) {
@@ -130,6 +131,16 @@ function getBoardList(req, res, next) {
   util.getFileContent(boardPath, (data) => {
     if(!data) console.error(data);
     res.json(data);
+  })
+}
+
+function getBoardPost(req, res, next) {
+  const idx = req.params.idx;
+  const id = req.body.id;
+  util.getFileContent(boardPath, (data) => {
+    if(!data) console.error(data);
+    const post = data.filter(v => v.idx == idx);
+    res.json(post[0]);
   })
 }
 

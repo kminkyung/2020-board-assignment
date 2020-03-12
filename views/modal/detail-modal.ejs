@@ -8,26 +8,30 @@
         </button>
       </div>
       <div class="modal-body p-4">
-          <table class="table table-bordered text-center" id="detail_table">
+          <table class="table table-bordered text-left" id="detail_table">
             <tbody>
             <tr>
-              <td>작성자</td>
-              <td class="p-3 text-left"><%= id %>
+              <td class="pl-4">작성자</td>
+              <td class="p-3" id="userid">
                 <input type="hidden" name="id" value="<%= id %>">
               </td>
             </tr>
+            <tr>
+              <td class="pl-4">작성일</td>
+              <td class="p-3" id="date"></td>
+            </tr>
             <tr class="p-3">
-              <td>제목</td>
+              <td class="pl-4">제목</td>
               <td id="title"></td>
             </tr>
             <tr>
-              <td>내용</td>
+              <td class="pl-4">내용</td>
               <td class="p-3" id="content"></td>
             </tr>
             </tbody>
           </table>
           <div class="modal-footer border-0 text-center justify-content-center">
-            <button type="submit" class="btn btn-secondary rounded-0 px-4">작성</button>
+            <button type="submit" class="btn btn-secondary rounded-0 px-4" onclick="modifyPost()">수정</button>
             <button type="button" class="btn btn-secondary rounded-0 px-4 ml-1" data-dismiss="modal">취소</button>
           </div>
       </div>

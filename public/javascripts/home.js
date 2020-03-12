@@ -98,7 +98,7 @@ function ShowBoard() {
     }
     else {
       const tbody_code = data.map(v => `<tr class="pointer" onclick="showDetailModal(this);">
-                                          <td>${v.idx}</td>
+                                          <td data-idx="${v.idx}">${v.idx}</td>
                                           <td>${v.id}</td>
                                           <td>${v.title}</td>
                                           <td>${v.content}</td>
@@ -133,11 +133,23 @@ function showWriteModal() {
 }
 
 function showDetailModal(tr) {
-  console.log($(tr));
-  
-  $.ajax({
+  const idx = $(tr).children("td:first-child").data("idx");
+  const id = $(tr).children("td:nth-child(2)").text();
+  getBoardPost(id, idx, function (data) {
+    console.log(data);
+    $("#board_detail_modal").find("#userid").text(data.id);
+    $("#board_detail_modal").find("#date").text(data.date);
+    $("#board_detail_modal").find("#title").text(data.title);
+    $("#board_detail_modal").find("#content").text(data.content);
+  });
+  $("#board_detail_modal").modal("show");
+}
+
+function getBoardPost(id, idx, callback) {
+    $.ajax({
     type: 'get',
-    url: "/rest/get_board_list",
+    url: `/rest/get_board_post/${idx}`,
+    data: {id},
     error: function(err) {
       console.log(err);
     },
@@ -145,10 +157,9 @@ function showDetailModal(tr) {
       callback(res);
     }
   });
-  
-  $("#board_detail_modal").modal("show");
-
 }
+
+
 
 
 function submitWriteForm() {
