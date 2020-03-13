@@ -29,7 +29,7 @@ function showMemberList() {
   $("#btnShowList").addClass("d-none");
   const id = $("#id").text();
   const manage_button = `<button type="button" class="btn btn-secondary btn-sm rounded-0" onclick="changeGrade(this);">등급변경</button>`;
-
+  
   getMemberList(function (list) {
     const code = `<div class="container border shadow-box mx-auto my-5 p-5 pb-0" id="user_list_container" style="width: 700px">
                   <h4 class="mb-4">유저목록</h4>
@@ -58,7 +58,7 @@ function showMemberList() {
               </div>`;
     $("body").append(code);
   });
-
+  
 }
 
 function hideMemberList() {
@@ -73,20 +73,20 @@ function hideBoard() {
   $("#btnShowBoard").removeClass("d-none");
 }
 
-// const range = (size, start) => [...Array(size)].map((v, i) => i + start);
-
-function ShowBoard() {
+// s
+function showBoard() {
   $("#board_list_container").remove();
   $("#btnHideBoard").removeClass("d-none");
   $("#btnShowBoard").addClass("d-none");
   const remove_btn_code =  `<button type="button" class="btn btn-secondary btn-sm rounded-0" id="btnRemove" onclick="confirmRemovePost(this);">삭제</button>`;
   const showmore_btn_code =  `<div class="text-center"><button type="button" class="btn btn-secondary rounded-0" id="btnShowMore" onclick="showMoreList()">더 보기</button></div>`;
   getBoardList(data => {
+    console.log(data);
+    
     if(data.length >= 10) {
       data = data.splice(0, 10);
     }
-    data.sort((a, b) => b.idx - a.idx);
-    console.log(data);
+    // data.sort((a, b) => b.idx - a.idx);
     const code = `<div class="container border shadow-box mx-auto my-5 p-5 pb-0" id="board_list_container" style="width: 700px">
                   <div class="d-flex justify-content-between align-items-start">
                     <h4 class="mb-4">게시판</h4>
@@ -132,16 +132,35 @@ function ShowBoard() {
   });
 }
 
+// 대충 기능만 하도록 더럽게 짰다 Refactoring 할 것.....  반드시...
 function showMoreList() {
-  let last_index = parseInt($("#board_list_table tr").length) - 1;
+  const remove_btn_code =  `<button type="button" class="btn btn-secondary btn-sm rounded-0" id="btnRemove" onclick="confirmRemovePost(this);">삭제</button>`;
+  const last_index = parseInt($("#board_list_table tr").length) - 1;
   // console.log(last_index);
   if(last_index < 10) {
     return;
   }
   getBoardList(data => {
     let list = data.splice(last_index, last_index * 2);
+    console.log('list: ', list);
+    const tbody_code = list.map(v => `<tr class="pointer" onclick="showDetailModal(this);">
+                                          <td data-idx="${v.idx}">${v.idx}</td>
+                                          <td>${v.id}</td>
+                                          <td>${v.title}</td>
+                                          <td>${v.content}</td>
+                                          <td>${v.date}</td>
+                                          <td>
+                                            ${grade == 9 ? remove_btn_code : id == v.id ? remove_btn_code : ''}
+                                          </td>
+                                        </tr>`);
+    $("#board_list_table tbody").append(tbody_code);
+    
+    if(list.length >= 10) {
+      $("#board_list_container").append(showmore_btn_code);
+    } else {
+      $("#btnShowMore").addClass("d-none");
+    }
   })
-
 }
 
 
@@ -179,8 +198,8 @@ function confirmRemovePost(t) {
   if(confirm("정말로 삭제하시겠습니까?")) {
     removePost(idx, id,function (res) {
       if(res.code !== 200) {
-          alert("문제가 발생했습니다.");
-          return;
+        alert("문제가 발생했습니다.");
+        return;
       }
       alert("삭제되었습니다.");
       location.reload();
@@ -189,7 +208,7 @@ function confirmRemovePost(t) {
 }
 
 function removePost(idx, id, callback) {
-    $.ajax({
+  $.ajax({
     type: 'post',
     url: `/rest/remove_board_post/${idx}`,
     data: {id},
@@ -217,14 +236,14 @@ function showDetailModal(tr) {
     $("#board_detail_modal").find("#date").text(data.date);
     $("#board_detail_modal").find("#title").text(data.title);
     $("#board_detail_modal").find("#content").text(data.content);
-
+    
     if(grade == 9 || id == data.id) {
       $("#btnModify").removeClass("d-none");
     } else {
       $("#btnModify").addClass("d-none");
     }
   });
-
+  
   $("#board_detail_modal").modal("show");
 }
 
@@ -259,7 +278,7 @@ function getBoardList(callback) {
 }
 
 function getBoardPost(id, idx, callback) {
-    $.ajax({
+  $.ajax({
     type: 'get',
     url: `/rest/get_board_post/${idx}`,
     data: {id},
@@ -293,7 +312,7 @@ function updatePassword() {
     alert("비빌번호는 문자 숫자 특수문자를 포함해 8~15자 이내여야 합니다.");
     return;
   }
-
+  
   $.ajax({
     type: 'post',
     url: "/rest/update_member_password",
@@ -311,7 +330,7 @@ function updatePassword() {
 function updateGrade(btn) {
   const id = $(btn).parent().data("id");
   const grade = $(btn).parents("tr").find("#select_grade").val();
-
+  
   $.ajax({
     type: 'post',
     url: "/rest/update_member_grade",
