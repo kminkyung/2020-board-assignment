@@ -73,14 +73,14 @@ function hideBoard() {
   $("#btnShowBoard").removeClass("d-none");
 }
 
-// s
-function showBoard() {
+// refactoring....
+function showBoard(page) {
   $("#board_list_container").remove();
   $("#btnHideBoard").removeClass("d-none");
   $("#btnShowBoard").addClass("d-none");
   const remove_btn_code =  `<button type="button" class="btn btn-secondary btn-sm rounded-0" id="btnRemove" onclick="confirmRemovePost(this);">삭제</button>`;
   const showmore_btn_code =  `<div class="text-center"><button type="button" class="btn btn-secondary rounded-0" id="btnShowMore" onclick="showMoreList()">더 보기</button></div>`;
-  getBoardList(data => {
+  getBoardList(page,data => {
     console.log(data);
     
     if(data.length >= 10) {
@@ -264,10 +264,10 @@ function submitWriteForm() {
 }
 
 
-function getBoardList(callback) {
+function getBoardList(page, callback) {
   $.ajax({
     type: 'get',
-    url: "/rest/get_board_list",
+    url: `/rest/get_board_list/${page}`,
     error: function(err) {
       console.log(err);
     },

@@ -5,10 +5,11 @@ const path = require('path');
 const util = require('../util');
 let loginUser = {};
 
-/* main login page */
 router.get('/', getSignUpPage);
 router.post('/member', joinMember);
 
+
+/* sign up page */
 function getSignUpPage(req, res, next) {
   if(req.session.user) {
     loginUser = req.session.user;
@@ -60,9 +61,6 @@ function joinMember(req, res, next) {
     })
   }
 }
-
-
-
 
 
 module.exports = router;

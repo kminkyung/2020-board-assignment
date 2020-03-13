@@ -13,13 +13,40 @@ const boardPath = path.join(__dirname, '..', boardFile);
 router.get('/get_member_id/:id', getMemberId);
 router.get('/get_member_list', getMemberList);
 router.get('/get_board_post/:idx', getBoardPost);
-router.get('/get_board_list', getBoardList);
+router.get('/get_board_list/:page', getBoardList);
 router.post('/update_member_grade', updateGrade);
 router.post('/update_member_password', updatePassword);
 router.post('/write_board', writeBoard);
 router.post('/remove_board_post/:idx', removeBoardPost);
 router.post('/update_board', updateBoardPost);
 
+
+/* REST - Member */
+function getMemberId(req, res, next) {
+  const id = req.params.id;
+  let member = [];
+
+  util.getFileContent(memberPath, (data) => {
+    if(data.length == 0) {
+      res.send(true);
+      return;
+    }
+    member = data;
+    const registered = member.filter(v => v.id == id);
+    if(registered[0]) {
+      res.send(false);
+    } else {
+      res.send(true);
+    }
+  });
+}
+
+function getMemberList(req, res, next) {
+  util.getFileContent(memberPath, (data) => {
+    if(!data) console.error(data);
+    res.json(data);
+  });
+}
 
 function updatePassword(req, res, next) {
   const {id, password} = req.body;
@@ -34,7 +61,6 @@ function updatePassword(req, res, next) {
       res.send(util.alertLocation({msg: "수정이 완료되었습니다.", loc: "/"}));
     })
   });
-
 }
 
 function updateGrade(req, res, next) {
@@ -56,6 +82,8 @@ function updateGrade(req, res, next) {
   });
 }
 
+
+/* REST - Board */
 function writeBoard(req, res, next) {
   const {id, title, content} = req.body;
   let post = [];
@@ -102,40 +130,6 @@ function writeBoard(req, res, next) {
   }
 }
 
-
-function getMemberId(req, res, next) {
-  const id = req.params.id;
-  let member = [];
-
-  util.getFileContent(memberPath, (data) => {
-    if(data.length == 0) {
-      res.send(true);
-      return;
-    }
-    member = data;
-    const registered = member.filter(v => v.id == id);
-    if(registered[0]) {
-      res.send(false);
-    } else {
-      res.send(true);
-    }
-  });
-}
-
-function getMemberList(req, res, next) {
-  util.getFileContent(memberPath, (data) => {
-    if(!data) console.error(data);
-    res.json(data);
-  });
-}
-
-function getBoardList(req, res, next) {
-  util.getFileContent(boardPath, (data) => {
-    if(!data) console.error(data);
-    res.json(data);
-  })
-}
-
 function getBoardPost(req, res, next) {
   const idx = req.params.idx;
   const id = req.body.id; // 필요없을 수도
@@ -145,6 +139,15 @@ function getBoardPost(req, res, next) {
     res.json(post[0]);
   })
 }
+
+function getBoardList(req, res, next) {
+  const page = req.params.page;
+  util.getFileContent(boardPath, (data) => {
+    if(!data) console.error(data);
+    res.json(data);
+  })
+}
+
 
 function removeBoardPost(req, res, next) {
   const idx = req.params.idx;
@@ -171,11 +174,7 @@ function updateBoardPost(req, res, next) {
     });
     util.writeFile(boardPath, data, (result) => {
       if(!result) console.error(result);
-      res.send(`<meta charset="utf-8">
-                  <script>
-                    alert("수정이 완료되었습니다.");
-                    location.href = "/";
-                  </script>`);
+      res.send(util.alertLocation({msg: "수정이 완료되었습니다.", loc: "/"}));
     });
   })
 }
