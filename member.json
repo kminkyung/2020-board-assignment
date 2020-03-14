@@ -1,1 +1,1 @@
-[{"id":"administrator","password":"123123q!","name":"관리자","email":"admin@mail.com","grade":9},{"id":"testuser1","password":"12345q!!","name":"테스트","email":"test@mail.com","grade":1},{"id":"abcdefg11","password":"1234qwer!@","name":"테스트","email":"abc@naver.com","grade":1}]
+[{"id":"administrator","password":"123123q!","name":"관리자","email":"admin@mail.com","grade":9},{"id":"testuser1","password":"12345q!!","name":"테스트","email":"test@mail.com","grade":1}]
