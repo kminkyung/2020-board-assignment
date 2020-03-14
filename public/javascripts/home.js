@@ -136,7 +136,7 @@ function showMoreList(page) {
   const remove_btn_code = `<button type="button" class="btn btn-secondary btn-sm rounded-0" id="btnRemove" onclick="confirmRemovePost(this);">삭제</button>`;
   const showmore_btn_code = `<div class="text-center"><button type="button" class="btn btn-secondary rounded-0" id="btnShowMore" onclick="showMoreList(${page + 1})">더 보기</button></div>`;
 
-  getBoardList(page,data => {
+  getBoardList(page, data => {
     console.log(data);
     const tbody_code = data.list.map(v => `<tr class="pointer" onclick="showDetailModal(this);">
                                           <td data-idx="${v.idx}">${v.idx}</td>
@@ -188,11 +188,11 @@ function submitUpdatePost(form) {
 function confirmRemovePost(t) {
   event.stopPropagation();
   const idx = $(t).parents("tr").children("td:first-child").data("idx");
-  const id = $(t).parents("tr").children("td:nth-child(2)").text();
   if (confirm("정말로 삭제하시겠습니까?")) {
-    removePost(idx, id, function (res) {
+    removePost(idx, function (res) {
+      console.log(res);
       if (res.code !== 200) {
-        alert("문제가 발생했습니다.");
+        alert("권한이 없습니다.");
         return;
       }
       alert("삭제되었습니다.");
@@ -201,11 +201,10 @@ function confirmRemovePost(t) {
   }
 }
 
-function removePost(idx, id, callback) {
+function removePost(idx, callback) {
   $.ajax({
     type: 'post',
     url: `/rest/remove_board_post/${idx}`,
-    data: {id},
     error: function (err) {
       console.log(err);
     },
@@ -314,8 +313,14 @@ function updatePassword() {
       console.log(err);
     },
     success: function (res) {
-      alert("비밀번호가 변경되었습니다.");
-      location.href = '/';
+      if (res.code == 200) {
+        alert("비밀번호가 변경되었습니다.");
+        location.href = '/';
+      }
+      else {
+        alert("권한이 없습니다.");
+        location.href = '/';
+      }
     }
   })
 }
@@ -332,8 +337,13 @@ function updateGrade(btn) {
       callback(false);
     },
     success: function (res) {
-      alert("등급이 변경되었습니다.");
-      location.href = '/';
+      if (res.code == 200) {
+        alert("등급이 변경되었습니다.");
+        location.href = '/';
+      } else {
+        alert("권한이 없습니다.");
+        location.href = '/';
+      }
     }
   });
 }

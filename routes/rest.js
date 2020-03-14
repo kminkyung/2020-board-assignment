@@ -50,21 +50,31 @@ function getMemberList(req, res, next) {
 
 function updatePassword(req, res, next) {
   const {id, password} = req.body;
+  const login_id = req.session.user.id;
 
   util.getFileContent(memberPath, (data) => {
-    const memData = JSON.parse(data);
+    const memData = data;
     memData.map(v => {
       if(v.id == id) v.password = password;
     });
+    if(memData.id !== login_id) {
+      res.send({code: 401});
+      return;
+    }
     util.writeFile(memberFile, memData, (result) => {
       if(!result) console.error(result);
-      res.send(util.alertLocation({msg: "수정이 완료되었습니다.", loc: "/"}));
+      res.send({code: 200});
     })
   });
 }
 
 function updateGrade(req, res, next) {
   const {id, grade} = req.body;
+  const user_grade = req.session.user.grade;
+  if(user_grade !== 9) {
+    res.send({code: 401});
+    return;
+  }
   fs.readFile(memberPath, 'utf8', (err, data) => {
     if (err) throw err;
     const memData = JSON.parse(data);
@@ -76,7 +86,7 @@ function updateGrade(req, res, next) {
     fs.writeFile(memberFile, JSON.stringify(memData), (err) => {
       if (err) console.error(err);
       else {
-        res.send({code : 200});
+        res.send({code: 200});
       }
     });
   });
@@ -160,7 +170,6 @@ function getBoardList(req, res, next) {
 
 
     if(page + 1 < page_count) is_next = true;
-    console.log(page, total, start_index, end_index, page_count, is_next);
     const list = data.slice(Math.sign(start_index) === -1 ? 0 : start_index, end_index).sort((a, b) => b.idx - a.idx);
     result.list = list;
     result.is_next = is_next;
@@ -171,10 +180,14 @@ function getBoardList(req, res, next) {
 
 function removeBoardPost(req, res, next) {
   const idx = req.params.idx;
-  const id = req.body.id; // 필요없을 수도
+  const {id, grade} = req.session.user;
   util.getFileContent(boardPath, (data) => {
     if(!data) console.error(data);
     const removeIndex = data.findIndex(v => v.idx == idx);
+    if(removeIndex.id !== id && grade !== 9) {
+      res.send({code: 401});
+      return;
+    }
     data.splice(removeIndex, 1);
     util.writeFile(boardPath, data, function (result) {
       if(!result) console.error(result);
@@ -184,7 +197,8 @@ function removeBoardPost(req, res, next) {
 }
 
 function updateBoardPost(req, res, next) {
-  const {id, idx, title, content} = req.body;
+  const {idx, title, content} = req.body;
+  const {id, grade} = req.body.session.user;
   util.getFileContent(boardPath, (data) => {
     data.map(v => {
       if(v.idx == idx) {
@@ -192,6 +206,10 @@ function updateBoardPost(req, res, next) {
         v.content = content;
       }
     });
+    if(id !== data.id && grade !== 9) {
+      res.send(util.alertLocation({msg: "권한이 없습니다..", loc: "/"}));
+      return;
+    }
     util.writeFile(boardPath, data, (result) => {
       if(!result) console.error(result);
       res.send(util.alertLocation({msg: "수정이 완료되었습니다.", loc: "/"}));

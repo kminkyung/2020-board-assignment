@@ -30,7 +30,7 @@ module.exports.getFileContent = (path, callback) => {
 
 module.exports.writeFile = (path, content, callback) => {
   fs.writeFile(path, JSON.stringify(content), 'utf8', (err, data) => {
-    if (err) callback(err); // 파일 쓰기 실패
+    if (err) callback(false); // 파일 쓰기 실패
     callback(true);
   });
 };
