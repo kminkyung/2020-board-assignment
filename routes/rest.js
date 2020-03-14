@@ -141,10 +141,30 @@ function getBoardPost(req, res, next) {
 }
 
 function getBoardList(req, res, next) {
-  const page = req.params.page;
+  const page = parseInt(req.params.page); // 0
+  const list_count = 10;
+  const result = {};
+  let is_next = false;
+  let total = 0;
+  let end_index = 0; // 51
+  let start_index = 0; // 41
+  let page_count = 0; // 6
+
   util.getFileContent(boardPath, (data) => {
     if(!data) console.error(data);
-    res.json(data);
+
+    total = data.length; // 51
+    end_index = data.length - page * 10;
+    start_index = end_index - list_count;
+    page_count = Math.ceil(total / list_count);
+
+
+    if(page + 1 < page_count) is_next = true;
+    console.log(page, total, start_index, end_index, page_count, is_next);
+    const list = data.slice(Math.sign(start_index) === -1 ? 0 : start_index, end_index).sort((a, b) => b.idx - a.idx);
+    result.list = list;
+    result.is_next = is_next;
+    res.json(result);
   })
 }
 
