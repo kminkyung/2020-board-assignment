@@ -131,7 +131,6 @@ function showBoard(page) {
 }
 
 function showMoreList(page) {
-  console.log(page);
   $("#btnShowMore").remove();
   const remove_btn_code = `<button type="button" class="btn btn-secondary btn-sm rounded-0" id="btnRemove" onclick="confirmRemovePost(this);">삭제</button>`;
   const showmore_btn_code = `<div class="text-center"><button type="button" class="btn btn-secondary rounded-0" id="btnShowMore" onclick="showMoreList(${page + 1})">더 보기</button></div>`;

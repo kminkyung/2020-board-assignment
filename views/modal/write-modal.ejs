@@ -8,7 +8,7 @@
         </button>
       </div>
       <div class="modal-body p-4">
-        <form action="/rest/write_board" method="post" name="writeForm" autocomplete="off" onsubmit="return submitWriteForm();">
+        <form action="/rest/write_board" method="post" name="writeForm" autocomplete="off" onsubmit="return submitWriteForm();" enctype="multipart/form-data">
           <table class="table table-bordered text-center" id="write_table">
             <tbody>
             <tr>
@@ -24,6 +24,10 @@
             <tr>
               <td>내용</td>
               <td class="p-3"><textarea name="content" id="content" class="form-control rounded-0" cols="30" rows="10"></textarea></td>
+            </tr>
+            <tr>
+              <td>파일</td>
+              <td class="p-3"><input type="file" name="upfile" id="upfile" class="form-control-file rounded-0"></td>
             </tr>
             </tbody>
           </table>

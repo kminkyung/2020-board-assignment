@@ -11,19 +11,22 @@ module.exports.alertLocation = (obj) => {
 };
 
 
-
 module.exports.checkFile = (path) => {
-	fs.stat(path, (err, stats) => {
-		if(err && err.code == 'ENOENT') return true; // 파일 존재하지 않음 -> 새로 만들어도 됨 true
-		if(err) return err;
-		return false; // 파일 있음 -> false
-	});
+  fs.stat(path, (err, stats) => {
+    if (err && err.code == 'ENOENT') {  // 파일 존재하지 않음 -> 새로 만들어도 됨 true
+      console.log('파일 또는 폴더가 해당 패스에 없음 -> ', err.path);
+      return true;
+    } else if (err == null) {
+      return false; // 파일 있음 -> false
+    }
+  });
 };
+
 
 module.exports.getFileContent = (path, callback) => {
   fs.readFile(path, 'utf8', (err, content) => {
     if (err) callback(err); // 파일읽기 실패
-    if(content == '') callback([]);
+    if (content == '') callback([]);
     else callback(JSON.parse(content));
   });
 };
@@ -56,7 +59,7 @@ module.exports.convertDate = (d, type) => {
   type 5 : 8월 11일
   type 6 : 11시 11분 12초
   */
-  switch(type) {
+  switch (type) {
     case 1:
       returnStr = year + month + day + hour + min + sec;
       break;
@@ -80,7 +83,7 @@ module.exports.convertDate = (d, type) => {
       break;
   }
   return returnStr;
-} ;
+};
 
 
 

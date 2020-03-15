@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs');
 const path = require('path');
-const util = require('../util');
+const util = require('../module/util');
 let loginUser = {};
 
 router.get('/', getSignUpPage);
