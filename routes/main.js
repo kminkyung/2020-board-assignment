@@ -5,11 +5,13 @@ const path = require('path');
 const util = require('../module/util');
 
 let loginUser = {};
+const uploadPath = path.join(__dirname, '../public/upload');
 
 
 router.get('/', getMainPage);
 router.post('/login', loginMember);
 router.get('/logout', logoutMember);
+router.get('/download/', downFile);
 
 
 
@@ -69,5 +71,13 @@ function logoutMember(req, res, next) {
     res.redirect('/');
 }
 
+
+function downFile(req, res, next) {
+  const filename = req.query.filename;
+  const downname = req.query.downname;
+  console.log(filename, downname);
+  const path = uploadPath + '/'+ filename;
+  res.download(path, downname);
+}
 
 module.exports = router;

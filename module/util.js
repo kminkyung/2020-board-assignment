@@ -14,28 +14,40 @@ module.exports.alertLocation = (obj) => {
 module.exports.checkFile = (path) => {
   fs.stat(path, (err, stats) => {
     if (err && err.code == 'ENOENT') {  // 파일 존재하지 않음 -> 새로 만들어도 됨 true
-      console.log('파일 또는 폴더가 해당 패스에 없음 -> ', err.path);
       return true;
-    } else if (err == null) {
+    }
+    if (err) console.log(err);
+    else {
       return false; // 파일 있음 -> false
     }
   });
 };
 
 
-module.exports.getFileContent = (path, callback) => {
-  fs.readFile(path, 'utf8', (err, content) => {
-    if (err) callback(err); // 파일읽기 실패
-    if (content == '') callback([]);
-    else callback(JSON.parse(content));
+module.exports.getFileContent = (path) => {
+  return new Promise((resolve, reject) => {
+    fs.readFile(path, 'utf8', (err, content) => {
+      if (err) { // 파일읽기 실패
+        reject(err);
+      }
+      if (content == '') {
+        resolve([]);
+      } else {
+        resolve(JSON.parse(content));
+      }
+    });
   });
 };
 
-module.exports.writeFile = (path, content, callback) => {
-  fs.writeFile(path, JSON.stringify(content), 'utf8', (err, data) => {
-    if (err) callback(false); // 파일 쓰기 실패
-    callback(true);
-  });
+module.exports.writeFile = (path, content) => {
+  return new Promise((resolve, reject) => {
+    fs.writeFile(path, JSON.stringify(content), 'utf8', (err, data) => {
+      if (err) reject(false); // 파일 쓰기 실패
+      else {
+        resolve(true);
+      }
+    });
+  })
 };
 
 

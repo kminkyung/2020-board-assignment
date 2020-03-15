@@ -31,7 +31,7 @@ function showMemberList() {
   const manage_button = `<button type="button" class="btn btn-secondary btn-sm rounded-0" onclick="changeGrade(this);">등급변경</button>`;
 
   getMemberList(function (list) {
-    const code = `<div class="container border shadow-box mx-auto my-5 p-5 pb-0" id="user_list_container" style="width: 700px">
+    const code = `<div class="container border shadow-box mx-auto my-5 p-5 pb-0" id="user_list_container" style="width: 900px">
                   <h4 class="mb-4">유저목록</h4>
                   <table class="table table-bordered text-center" id="user_list_table">
                     <thead>
@@ -84,7 +84,7 @@ function showBoard(page) {
 
   getBoardList(page, data => {
     console.log(data);
-    const code = `<div class="container border shadow-box mx-auto my-5 p-5 pb-0" id="board_list_container" style="width: 700px">
+    const code = `<div class="container border shadow-box mx-auto my-5 p-5 pb-0" id="board_list_container" style="width: 900px">
                   <div class="d-flex justify-content-between align-items-start">
                     <h4 class="mb-4">게시판</h4>
                     <button type="button" class="btn btn-secondary rounded-0" onclick="showWriteModal();">글쓰기</button>
@@ -97,6 +97,7 @@ function showBoard(page) {
                       <th>작성자</th>
                       <th>제목</th>
                       <th>내용</th>
+                      <th width="50">파일</th>
                       <th>작성일</th>
                       <th width="70">관리</th>
                     </tr>
@@ -116,6 +117,7 @@ function showBoard(page) {
                                           <td>${v.id}</td>
                                           <td>${v.title}</td>
                                           <td>${v.content}</td>
+                                          <td>${v.savefile !== '' ? '💾' : v.savefile}</td>
                                           <td>${v.date}</td>
                                           <td> 
                                             ${grade == 9 ? remove_btn_code : id == v.id ? remove_btn_code : ''}
@@ -220,14 +222,21 @@ function showWriteModal() {
 
 function showDetailModal(tr) {
   const idx = $(tr).children("td:first-child").data("idx");
-  const user_id = $(tr).children("td:nth-child(2)").text();
-  getBoardPost(user_id, idx, function (data) {
-    $("#board_detail_modal").find("#userid").text(data.id);
-    $("#board_detail_modal").find("#id").val(data.id);
-    $("#board_detail_modal").find("#idx").val(data.idx);
-    $("#board_detail_modal").find("#date").text(data.date);
-    $("#board_detail_modal").find("#title").text(data.title);
-    $("#board_detail_modal").find("#content").text(data.content);
+  const modal = $("#board_detail_modal");
+  getBoardPost(idx, function (data) {
+    modal.find("#userid").text(data.id);
+    modal.find("#id").val(data.id);
+    modal.find("#idx").val(data.idx);
+    modal.find("#date").text(data.date);
+    modal.find("#title").text(data.title);
+    modal.find("#content").text(data.content);
+    if (data.orifile !== "") {
+      data.orifile = data.orifile.split(" ");
+      data.savefile = data.savefile.split(" ");
+      console.log(data.savefile);
+      const code = data.orifile.map((v, i) => `<a href="/download?filename=${data.savefile[i]}&downname=${v}" class="d-inline-block">${v}</a>`);
+      modal.find("#file").html(code);
+    }
 
     if (grade == 9 || id == data.id) {
       $("#btnModify").removeClass("d-none");
@@ -268,11 +277,10 @@ function getBoardList(page, callback) {
   })
 }
 
-function getBoardPost(id, idx, callback) {
+function getBoardPost(idx, callback) {
   $.ajax({
     type: 'get',
     url: `/rest/get_board_post/${idx}`,
-    data: {id},
     error: function (err) {
       console.log(err);
     },
@@ -315,8 +323,7 @@ function updatePassword() {
       if (res.code == 200) {
         alert("비밀번호가 변경되었습니다.");
         location.href = '/';
-      }
-      else {
+      } else {
         alert("권한이 없습니다.");
         location.href = '/';
       }

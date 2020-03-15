@@ -9,6 +9,7 @@ const memberFile = 'member.json';
 const memberPath = path.join(__dirname, '..', memberFile);
 const boardFile = 'board.json';
 const boardPath = path.join(__dirname, '..', boardFile);
+const uploadPath = path.join(__dirname, '../upload');
 
 /* rest router */
 router.get('/get_member_id/:id', getMemberId);
@@ -23,105 +24,103 @@ router.post('/update_board', updateBoardPost);
 
 
 /* REST - Member */
-function getMemberId(req, res, next) {
+async function getMemberId(req, res, next) {
   const id = req.params.id;
   let member = [];
 
-  util.getFileContent(memberPath, (data) => {
-    if (data.length == 0) {
-      res.send(true);
-      return;
-    }
-    member = data;
-    const registered = member.filter(v => v.id == id);
-    if (registered[0]) {
-      res.send(false);
-    } else {
-      res.send(true);
-    }
-  });
+  let data = await util.getFileContent(memberPath);
+  if (data.length == 0) {
+    res.send(true);
+    return;
+  }
+  member = data;
+  const registered = member.filter(v => v.id == id);
+  if (registered[0]) {
+    res.send(false);
+  } else {
+    res.send(true);
+  }
 }
 
-function getMemberList(req, res, next) {
-  util.getFileContent(memberPath, (data) => {
-    if (!data) console.error(data);
-    res.json(data);
-  });
+async function getMemberList(req, res, next) {
+  let data = await util.getFileContent(memberPath);
+  if (!data) console.error(data);
+  res.json(data);
 }
 
-function updatePassword(req, res, next) {
+async function updatePassword(req, res, next) {
   const {id, password} = req.body;
   const login_id = req.session.user.id;
 
-  util.getFileContent(memberPath, (data) => {
-    const memData = data;
-    memData.map(v => {
-      if (v.id == id) v.password = password;
-    });
-    if (memData.id !== login_id) {
-      res.send({code: 401});
-      return;
-    }
-    util.writeFile(memberFile, memData, (result) => {
-      if (!result) console.error(result);
-      res.send({code: 200});
-    })
+  let data = await util.getFileContent(memberPath);
+  data.map(v => {
+    if (v.id == id) v.password = password;
   });
+  if (data.id !== login_id) {
+    res.send({code: 401});
+    return;
+  }
+  let result = await util.writeFile(memberFile, memData)
+  if (!result) console.error(result);
+  res.send({code: 200});
 }
 
-function updateGrade(req, res, next) {
+async function updateGrade(req, res, next) {
   const {id, grade} = req.body;
   const user_grade = req.session.user.grade;
   if (user_grade !== 9) {
     res.send({code: 401});
     return;
   }
-  fs.readFile(memberPath, 'utf8', (err, data) => {
-    if (err) throw err;
-    const memData = JSON.parse(data);
-    memData.map(v => {
-      if (v.id == id) {
-        v.grade = parseInt(grade);
-      }
-    });
-    fs.writeFile(memberFile, JSON.stringify(memData), (err) => {
-      if (err) console.error(err);
-      else {
-        res.send({code: 200});
-      }
-    });
+  let data = await util.getFileContent(memberPath);
+  if (!data) throw err;
+  data.map(v => {
+    if (v.id == id) {
+      v.grade = parseInt(grade);
+    }
   });
+  let result = util.writeFile(memberPath, data);
+  if (!result) console.error(result);
+  else {
+    res.send({code: 200});
+  }
 }
 
 
 /* REST - Board */
 
-function divideFile(size, path, name) {
-  const mb = 1024 * 1024;
-  const div_count = parseInt(Math.ceil(size / mb));
-  const file_path = path;
-  let file_name = '';
-
-  fs.readFile(file_path, function (err, data) {
-    let start = 0;
-    let end = mb;
-    for (let i = 1; i <= div_count; i++) {
-      let target_path = `${file_path}.${i}`;
-      let sub_file = data.slice(start, end);
-      file_name += `${name}.${i} `;
-      start = end;
-      end += mb;
-      if (end > data.length) end = data.length;
-      fs.writeFile(target_path, sub_file, (err) => {
-        if (err) console.log(err);
-      })
-    }
-    return file_name;
+const divideFile = async (size, path, name, oriname) => {
+  return new Promise((resolve, reject) => {
+    const obj = {};
+    obj.file_name = '';
+    obj.ori_name = '';
+    const mb = 1024 * 1024;
+    const div_count = parseInt(Math.ceil(size / mb));
+    const file_path = path;
+    fs.readFile(file_path, function (err, data) {
+      let start = 0;
+      let end = mb;
+      for (let i = 1; i <= div_count; i++) {
+        let target_path = `${file_path}.${i}`;
+        let sub_file = data.slice(start, end);
+        obj.file_name += `${name}.${i} `;
+        obj.ori_name += `${oriname}.${i} `;
+        start = end;
+        end += mb;
+        if (end > data.length) end = data.length;
+        fs.writeFile(target_path, sub_file, (err) => {
+          if (err) console.log(err);
+        });
+      }
+      resolve(obj);
+    });
   });
-}
+};
 
 
-function writeBoard(req, res, next) {
+
+
+async function writeBoard(req, res, next) {
   const {id, title, content} = req.body;
   const mb = 1024 * 1024;
   let post = [];
@@ -130,133 +129,119 @@ function writeBoard(req, res, next) {
   info.id = id;
   info.title = title;
   info.content = content;
-  info.orifile = '';
-  info.savefile = '';
+  info.orifile = req.file ? req.file.originalname : '';
+  info.savefile = req.file ? req.file.filename : '';
   info.date = util.convertDate(new Date(), 4);
 
-  // console.log('req.file: ', req.file);
-  (async () => {
-    if (req.file) { // 첨부파일이 있으면
-      info.orifile = req.file.originalname;
-      if (req.file.size > mb) { // 있는데 1MB 보다 크다면
-        info.savefile = await divideFile(req.file.size, req.file.path, req.file.filename);
-        console.log('아왜안되는데왜왜왜', info.savefile);
-      } else {
-        info.savefile = req.file.filename;
-      }
-    }
-    if (util.checkFile(boardPath)) { // board.json 파일이 존재하지 않음
-      post.push(info);
-      util.writeFile(boardPath, post, (result) => {
-        if (!result) console.error(result);
-        res.send(util.alertLocation({msg: "작성이 완료되었습니다.", loc: "/"}));
-        return;
-      })
-    } else { // board.json 파일 존재
-      util.getFileContent(boardPath, (data) => {
-        if (!data) { // board.json 파일이 존재하지만, 데이터 없음
-          post.push(info);
-          util.writeFile(boardPath, post, (result) => {
-            if (!result) console.error(result);
-            res.send(util.alertLocation({msg: "작성이 완료되었습니다.", loc: "/"}));
-            return;
-          })
-        } else { // board.json 파일 존재, 기존 데이터 있음
-          post = data;
-          let max = 0;
-          post.forEach((v) => {
-            max = parseInt(v.idx);
-            if (parseInt(v.idx) > max) max = parseInt(v.idx);
-          });
-          info.idx = max + 1;
-          post.push(info);
-          util.writeFile(boardPath, post, (result) => {
-            if (!result) console.error(result);
-            res.send(util.alertLocation({msg: "작성이 완료되었습니다.", loc: "/"}));
-          })
-        }
-      })
-    }
-  })();
-
-
+  if(req.file.size > mb * 10) {
+    res.send({code: 403});
+  }
+  if (req.file.size > mb) {
+    const data = await divideFile(req.file.size, req.file.path, req.file.filename, req.file.originalname);
+    info.orifile = data.ori_name;
+    info.savefile = data.file_name;
+    fs.unlinkSync(req.file.path);
+  }
+  console.log(info);
+  if (util.checkFile(boardPath)) { // board.json 파일이 존재하지 않음
+    post.push(info);
+    let result = await util.writeFile(boardPath, post);
+    if (!result) console.error(result);
+    res.send(util.alertLocation({msg: "작성이 완료되었습니다.", loc: "/"}));
+    return;
+  } else { // board.json 파일 존재
+    let data = await util.getFileContent(boardPath);
+    post = data;
+    let max = 0;
+    post.forEach((v) => {
+      max = parseInt(v.idx);
+      if (parseInt(v.idx) > max) max = parseInt(v.idx);
+    });
+    info.idx = max + 1;
+    post.push(info);
+    let result = await util.writeFile(boardPath, post);
+    if (!result) console.error(result);
+    res.send(util.alertLocation({msg: "작성이 완료되었습니다.", loc: "/"}));
+  }
 }
 
-function getBoardPost(req, res, next) {
+async function getBoardPost(req, res, next) {
   const idx = req.params.idx;
-  const id = req.body.id; // 필요없을 수도
-  util.getFileContent(boardPath, (data) => {
-    if (!data) console.error(data);
-    const post = data.filter(v => v.idx == idx);
-    res.json(post[0]);
-  })
+  let data = await util.getFileContent(boardPath);
+  if (!data) console.error(data);
+  const post = data.filter(v => v.idx == idx);
+  res.json(post[0]);
 }
 
-function getBoardList(req, res, next) {
-  const page = parseInt(req.params.page); // 0
+async function getBoardList(req, res, next) {
+  const page = parseInt(req.params.page);
   const list_count = 10;
   const result = {};
   let is_next = false;
   let total = 0;
-  let end_index = 0; // 51
-  let start_index = 0; // 41
-  let page_count = 0; // 6
+  let end_index = 0;
+  let start_index = 0;
+  let page_count = 0;
 
-  util.getFileContent(boardPath, (data) => {
-    if (!data) console.error(data);
+  let data = await util.getFileContent(boardPath);
+  if (!data) console.error(data);
 
-    total = data.length; // 51
-    end_index = data.length - page * list_count;
-    start_index = end_index - list_count;
-    page_count = Math.ceil(total / list_count);
+  total = data.length;
+  end_index = data.length - page * list_count;
+  start_index = end_index - list_count;
+  page_count = Math.ceil(total / list_count);
 
-
-    if (page + 1 < page_count) is_next = true;
-    const list = data.slice(Math.sign(start_index) === -1 ? 0 : start_index, end_index).sort((a, b) => b.idx - a.idx);
-    result.list = list;
-    result.is_next = is_next;
-    res.json(result);
-  })
+  if (page + 1 < page_count) is_next = true;
+  const list = data.slice(Math.sign(start_index) === -1 ? 0 : start_index, end_index).sort((a, b) => b.idx - a.idx);
+  result.list = list;
+  result.is_next = is_next;
+  res.json(result);
 }
 
 
-function removeBoardPost(req, res, next) {
+async function removeBoardPost(req, res, next) {
   const idx = req.params.idx;
   const {id, grade} = req.session.user;
-  util.getFileContent(boardPath, (data) => {
-    if (!data) console.error(data);
-    const removeIndex = data.findIndex(v => v.idx == idx);
-    if (removeIndex.id !== id && grade !== 9) {
-      res.send({code: 401});
-      return;
+  let data = await util.getFileContent(boardPath);
+  if (!data) console.error(data);
+  const removeIndex = data.findIndex(v => v.idx == idx);
+  if (removeIndex.id !== id && grade !== 9) {
+    res.send({code: 401});
+    return;
+  }
+
+  let savefile = data[removeIndex].savefile;
+  if(savefile !== "") {
+    savefile = savefile.split(" ");
+    savefile.pop();
+    console.log(savefile);
+    for(let i=0; i<savefile.length; i++) {
+      fs.unlinkSync(path.join(__dirname, `../public/upload/${savefile[i]}`));
     }
-    data.splice(removeIndex, 1);
-    util.writeFile(boardPath, data, function (result) {
-      if (!result) console.error(result);
-      res.send({code: 200});
-    })
-  })
+  }
+  data.splice(removeIndex, 1);
+  let result = await util.writeFile(boardPath, data);
+  if (!result) console.error(result);
+  res.send({code: 200});
 }
 
-function updateBoardPost(req, res, next) {
+async function updateBoardPost(req, res, next) {
   const {idx, title, content} = req.body;
   const {id, grade} = req.body.session.user;
-  util.getFileContent(boardPath, (data) => {
-    data.map(v => {
-      if (v.idx == idx) {
-        v.title = title;
-        v.content = content;
-      }
-    });
-    if (id !== data.id && grade !== 9) {
-      res.send(util.alertLocation({msg: "권한이 없습니다..", loc: "/"}));
-      return;
+  let data = await util.getFileContent(boardPath);
+  data.map(v => {
+    if (v.idx == idx) {
+      v.title = title;
+      v.content = content;
     }
-    util.writeFile(boardPath, data, (result) => {
-      if (!result) console.error(result);
-      res.send(util.alertLocation({msg: "수정이 완료되었습니다.", loc: "/"}));
-    });
-  })
+  });
+  if (id !== data.id && grade !== 9) {
+    res.send(util.alertLocation({msg: "권한이 없습니다..", loc: "/"}));
+    return;
+  }
+  let result = util.writeFile(boardPath, data);
+  if (!result) console.error(result);
+  res.send(util.alertLocation({msg: "수정이 완료되었습니다.", loc: "/"}));
 }
 
 
