@@ -41,9 +41,7 @@ function loginMember (req, res, next) {
         }
         else {
           const memData = data;
-          // console.log('memData: ', memData);
           const registered = memData.filter(v => v.id == id);
-          // console.log('registered: ', registered);
           if (registered.length == 0 || registered[0].id !== id || registered[0].password !== password) {
             res.send(util.alertLocation({msg: "등록되지 않은 아이디이거나 비밀번호가 일치하지 않습니다.", loc: "/"}));
           }
@@ -75,7 +73,6 @@ function logoutMember(req, res, next) {
 function downFile(req, res, next) {
   const filename = req.query.filename;
   const downname = req.query.downname;
-  console.log(filename, downname);
   const path = uploadPath + '/'+ filename;
   res.download(path, downname);
 }

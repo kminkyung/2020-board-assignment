@@ -142,7 +142,6 @@ async function writeBoard(req, res, next) {
     info.savefile = data.file_name;
     fs.unlinkSync(req.file.path);
   }
-  console.log(info);
   if (util.checkFile(boardPath)) { // board.json 파일이 존재하지 않음
     post.push(info);
     let result = await util.writeFile(boardPath, post);
@@ -214,7 +213,6 @@ async function removeBoardPost(req, res, next) {
   if(savefile !== "") {
     savefile = savefile.split(" ");
     savefile.pop();
-    console.log(savefile);
     for(let i=0; i<savefile.length; i++) {
       fs.unlinkSync(path.join(__dirname, `../public/upload/${savefile[i]}`));
     }
