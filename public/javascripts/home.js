@@ -230,11 +230,9 @@ function showDetailModal(tr) {
     modal.find("#date").text(data.date);
     modal.find("#title").text(data.title);
     modal.find("#content").text(data.content);
+    console.log(data)
     if (data.orifile !== "") {
-      data.orifile = data.orifile.split(" ");
-      data.savefile = data.savefile.split(" ");
-      console.log(data.savefile);
-      const code = data.orifile.map((v, i) => `<a href="/download?filename=${data.savefile[i]}&downname=${v}" class="d-inline-block">${v}</a>`);
+      const code = `<a href="/download?filename=${data.orifile}&idx=${data.idx}" class="d-inline-block">${data.orifile}</a>`;
       modal.find("#file").html(code);
     }
 

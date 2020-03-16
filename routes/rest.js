@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs');
 const path = require('path');
+const splitFile = require('split-file');
 const mt = require('../module/upload');
 const util = require('../module/util');
 
@@ -91,29 +92,32 @@ async function updateGrade(req, res, next) {
 
 const divideFile = async (size, path, name, oriname) => {
   return new Promise((resolve, reject) => {
-    const obj = {};
-    obj.file_name = '';
-    obj.ori_name = '';
     const mb = 1024 * 1024;
-    const div_count = parseInt(Math.ceil(size / mb));
-    const file_path = path;
-    fs.readFile(file_path, function (err, data) {
-      let start = 0;
-      let end = mb;
-      for (let i = 1; i <= div_count; i++) {
-        let target_path = `${file_path}.${i}`;
-        let sub_file = data.slice(start, end);
-        obj.file_name += `${name}.${i} `;
-        obj.ori_name += `${oriname}.${i} `;
-        start = end;
-        end += mb;
-        if (end > data.length) end = data.length;
-        fs.writeFile(target_path, sub_file, (err) => {
-          if (err) console.log(err);
-        });
-      }
-      resolve(obj);
-    });
+    splitFile.splitFileBySize(path, mb)
+              .then((names) => {
+                resolve(names);
+              })
+              .catch((err) => {
+                console.log('Error: ', err);
+              });
+    
+    // fs.readFile(file_path, function (err, data) {
+    //   let start = 0;
+    //   let end = mb;
+    //   for (let i = 1; i <= div_count; i++) {
+    //     let target_path = `${file_path}.${i}`;
+    //     let sub_file = data.slice(start, end);
+    //     obj.file_name += `${name}.${i} `;
+    //     obj.ori_name += `${oriname}.${i} `;
+    //     start = end;
+    //     end += mb;
+    //     if (end > data.length) end = data.length;
+    //     fs.writeFile(target_path, sub_file, (err) => {
+    //       if (err) console.log(err);
+    //     });
+    //   }
+    //   resolve(obj);
+    // });
   });
 };
 
@@ -129,17 +133,20 @@ async function writeBoard(req, res, next) {
   info.id = id;
   info.title = title;
   info.content = content;
-  info.orifile = req.file ? req.file.originalname : '';
-  info.savefile = req.file ? req.file.filename : '';
+  info.orifile = '';
+  info.savefile = [];
+  if (req.file) {
+    info.orifile = req.file.originalname;
+    info.savefile.push(req.file.filename);
+  }
   info.date = util.convertDate(new Date(), 4);
 
   if(req.file.size > mb * 10) {
     res.send({code: 403});
   }
   if (req.file.size > mb) {
-    const data = await divideFile(req.file.size, req.file.path, req.file.filename, req.file.originalname);
-    info.orifile = data.ori_name;
-    info.savefile = data.file_name;
+    const files = await divideFile(req.file.size, req.file.path, req.file.filename, req.file.originalname);
+    info.savefile = files;
     fs.unlinkSync(req.file.path);
   }
   if (util.checkFile(boardPath)) { // board.json 파일이 존재하지 않음

@@ -2,6 +2,7 @@ const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
 const util = require("./util");
+const test = require("./upload");
 
 
 const getPath = () => {
@@ -19,7 +20,7 @@ const getPath = () => {
   return directory;
 };
 
-const getFileName = (file) => {
+module.exports.getFileName = (file) => {
   const arr = file.split("."); // "a.txt" => ['a', 'txt];
   const obj = {};
   obj.timeInMs = Date.now(); // 1584192923505
@@ -35,7 +36,8 @@ const storage = multer.diskStorage({
     cb(null, getPath());
   },
   filename: function (req, file, cb) {
-    const filename = getFileName(file.originalname);
+    const filename = test.getFileName(file.originalname);
+    console.log(filename);
     cb(null, filename.saveName);
   }
 });
