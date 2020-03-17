@@ -81,4 +81,9 @@ textarea {
   background: rgba(0.2, 0.2, 0.2, 0.4);
 }
 
+#btnShowMore {
+  width: 100px;
+  padding: 5px 7px;
+}
+
 

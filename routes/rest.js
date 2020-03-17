@@ -14,13 +14,14 @@ const uploadPath = path.join(__dirname, '../upload');
 /* rest router */
 router.get('/get_member_id/:id', getMemberId);
 router.get('/get_member_list', getMemberList);
-router.get('/get_board_post/:idx', getBoardPost);
-router.get('/get_board_list/:page', getBoardList);
 router.post('/update_member_grade', updateGrade);
 router.post('/update_member_password', updatePassword);
+
 router.post('/write_board', mt.upload.single("upfile"), writeBoard);
-router.post('/remove_board_post/:idx', removeBoardPost);
+router.get('/get_board_post/:idx', getBoardPost);
+router.get('/get_board_list/:page', getBoardList);
 router.post('/update_board', updateBoardPost);
+router.post('/remove_board_post/:idx', removeBoardPost);
 
 
 /* REST - Member */

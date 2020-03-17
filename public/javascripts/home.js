@@ -31,7 +31,7 @@ function showMemberList() {
   const manage_button = `<button type="button" class="btn btn-secondary btn-sm rounded-0" onclick="changeGrade(this);">등급변경</button>`;
 
   getMemberList(function (list) {
-    const code = `<div class="container border shadow-box mx-auto my-5 p-5 pb-0" id="user_list_container" style="width: 900px">
+    const code = `<div class="container border shadow-box mx-auto my-5 p-5 pb-0" id="user_list_container">
                   <h4 class="mb-4">유저목록</h4>
                   <table class="table table-bordered text-center" id="user_list_table">
                     <thead>
@@ -114,7 +114,7 @@ function showBoard(page) {
   $("#board_list_container").remove();
   $("#btnHideBoard").removeClass("d-none");
   $("#btnShowBoard").addClass("d-none");
-   const code = `<div class="container border shadow-box mx-auto my-5 p-5 pb-0" id="board_list_container" style="width: 900px">
+   const code = `<div class="container border shadow-box mx-auto my-5 p-5 pb-0" id="board_list_container">
                   <div class="d-flex justify-content-between align-items-start">
                     <h4 class="mb-4">게시판</h4>
                     <button type="button" class="btn btn-secondary rounded-0" onclick="showWriteModal();">글쓰기</button>
@@ -244,6 +244,19 @@ function submitWriteForm() {
   }
   return true;
 }
+
+
+function writeComment(t) {
+ const post_idx = $(t).parents("#board_detail_modal").find("#idx").val();
+ const comment = $(t).find("#comment").val();
+ $("#post_idx").val(post_idx);
+
+  if(comment.trim() == '') {
+    alert("댓글 내용을 입력해주세요.");
+    return false;
+  }
+}
+
 
 
 function getBoardList(page, callback) {
