@@ -73,18 +73,48 @@ function hideBoard() {
   $("#btnShowBoard").removeClass("d-none");
 }
 
+
+
+function drawBoard(page) {
+  const remove_btn_code = `<button type="button" class="btn btn-secondary btn-sm rounded-0" id="btnRemove" onclick="confirmRemovePost(this);">삭제</button>`;
+  const showmore_btn_code = `<div class="text-center"><button type="button" class="btn btn-secondary rounded-0" id="btnShowMore" onclick="drawBoard(${page + 1})">더 보기</button></div>`;
+  getBoardList(page, data => {
+    console.log(data);
+    // $("#board_list_table tbody").empty();
+    if (data.list.length == 0) {
+      $("#board_list_table tbody").append(`<tr><td colspan="6">게시글이 없습니다.</td></tr>`);
+    } else {
+      const tbody_code = data.list.map(v => `<tr class="pointer" onclick="showDetailModal(this);">
+                                          <td data-idx="${v.idx}">${v.idx}</td>
+                                          <td>${v.id}</td>
+                                          <td>${v.title}</td>
+                                          <td>${v.content}</td>
+                                          <td>${v.savefile !== '' ? '💾' : v.savefile}</td>
+                                          <td>${v.date}</td>
+                                          <td>
+                                            ${grade == 9 ? remove_btn_code : id == v.id ? remove_btn_code : ''}
+                                          </td>
+                                        </tr>`);
+      $("#board_list_table tbody").append(tbody_code);
+    }
+    
+    if (data.is_next !== true) {
+      $("#btnShowMore").remove();
+    } else {
+      $("#board_list_container").append(showmore_btn_code);
+    }
+    
+  });
+}
+
+
+
+
 function showBoard(page) {
-  console.log(page);
   $("#board_list_container").remove();
   $("#btnHideBoard").removeClass("d-none");
   $("#btnShowBoard").addClass("d-none");
-  const remove_btn_code = `<button type="button" class="btn btn-secondary btn-sm rounded-0" id="btnRemove" onclick="confirmRemovePost(this);">삭제</button>`;
-  const showmore_btn_code = `<div class="text-center"><button type="button" class="btn btn-secondary rounded-0" id="btnShowMore" onclick="showMoreList(${page + 1})">더 보기</button></div>`;
-
-
-  getBoardList(page, data => {
-    console.log(data);
-    const code = `<div class="container border shadow-box mx-auto my-5 p-5 pb-0" id="board_list_container" style="width: 900px">
+   const code = `<div class="container border shadow-box mx-auto my-5 p-5 pb-0" id="board_list_container" style="width: 900px">
                   <div class="d-flex justify-content-between align-items-start">
                     <h4 class="mb-4">게시판</h4>
                     <button type="button" class="btn btn-secondary rounded-0" onclick="showWriteModal();">글쓰기</button>
@@ -107,57 +137,9 @@ function showBoard(page) {
                   </table>
               </div>`;
     $("body").append(code);
-
-    $("#board_list_table tbody").empty();
-    if (data.list.length == 0) {
-      $("#board_list_table tbody").append(`<tr><td colspan="6">게시글이 없습니다.</td></tr>`);
-    } else {
-      const tbody_code = data.list.map(v => `<tr class="pointer" onclick="showDetailModal(this);">
-                                          <td data-idx="${v.idx}">${v.idx}</td>
-                                          <td>${v.id}</td>
-                                          <td>${v.title}</td>
-                                          <td>${v.content}</td>
-                                          <td>${v.savefile !== '' ? '💾' : v.savefile}</td>
-                                          <td>${v.date}</td>
-                                          <td> 
-                                            ${grade == 9 ? remove_btn_code : id == v.id ? remove_btn_code : ''}
-                                          </td>
-                                        </tr>`);
-      $("#board_list_table tbody").append(tbody_code);
-    }
-
-    if (data.is_next == true) {
-      $("#board_list_container").append(showmore_btn_code);
-    }
-  });
+    drawBoard(page);
 }
 
-function showMoreList(page) {
-  $("#btnShowMore").remove();
-  const remove_btn_code = `<button type="button" class="btn btn-secondary btn-sm rounded-0" id="btnRemove" onclick="confirmRemovePost(this);">삭제</button>`;
-  const showmore_btn_code = `<div class="text-center"><button type="button" class="btn btn-secondary rounded-0" id="btnShowMore" onclick="showMoreList(${page + 1})">더 보기</button></div>`;
-
-  getBoardList(page, data => {
-    console.log(data);
-    const tbody_code = data.list.map(v => `<tr class="pointer" onclick="showDetailModal(this);">
-                                          <td data-idx="${v.idx}">${v.idx}</td>
-                                          <td>${v.id}</td>
-                                          <td>${v.title}</td>
-                                          <td>${v.content}</td>
-                                          <td>${v.date}</td>
-                                          <td>
-                                            ${grade == 9 ? remove_btn_code : id == v.id ? remove_btn_code : ''}
-                                          </td>
-                                        </tr>`);
-    $("#board_list_table tbody").append(tbody_code);
-
-    if (data.is_next !== true) {
-      $("#btnShowMore").remove();
-    } else {
-      $("#board_list_container").append(showmore_btn_code);
-    }
-  })
-}
 
 
 function modifyPost(btn) {
