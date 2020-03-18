@@ -15,7 +15,7 @@
             <input type="hidden" name="idx" id="idx">
             <tbody>
             <tr>
-              <th class="pl-4 w-25">작성자</th>
+              <th width="150" class="pl-4">작성자</th>
               <td class="p-3" id="userid">
               </td>
             </tr>
@@ -52,15 +52,16 @@
 
         <div class="modal-footer border-0 p-0 text-center justify-content-center">
           <h6 class="text-left w-100 mb-2">댓글목록</h6>
-          <form action="/rest/write_comment" method="post" name="writeCommentForm"
+          <form action="/rest/write_comment" method="post" class="w-100" name="writeCommentForm"
                 onsubmit="return writeComment(this);">
-            <input type="hidden" name="user_id" value="<% id %>">
+            <input type="hidden" name="writer" value="<% id %>">
             <input type="hidden" name="post_idx">
             <table class="table table-bordered text-left m-0" id="detail_comment_table">
               <tr>
                 <th width="150"><%= id %></th>
                 <td>
-                  <input type="text" id="comment" class="form-control rounded-0">
+                  <input type="text" id="comment" name="content" class="form-control rounded-0" placeholder="댓글 내용을 입력하세요.">
+                  <input type="file" id="up_cmt_file" name="up_cmt_file" class="form-control-file py-2" >
                 </td>
                 <td width="80" class="p-0 text-center">
                   <button type="submit" class="btn btn-sm btn-secondary rounded-0">댓글등록</button>

@@ -250,11 +250,11 @@ function writeComment(t) {
  const post_idx = $(t).parents("#board_detail_modal").find("#idx").val();
  const comment = $(t).find("#comment").val();
  $("#post_idx").val(post_idx);
-
   if(comment.trim() == '') {
     alert("댓글 내용을 입력해주세요.");
     return false;
   }
+  return true;
 }
 
 

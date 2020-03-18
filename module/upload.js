@@ -3,7 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const util = require("./util");
 const test = require("./upload");
-
+const uuid = require("uuid");
 
 const getPath = () => {
   const directory = path.join(__dirname, "../public/upload");
@@ -20,31 +20,35 @@ const getPath = () => {
   return directory;
 };
 
-module.exports.getFileName = (file) => {
-  const arr = file.split("."); // "a.txt" => ['a', 'txt];
-  const obj = {};
-  obj.timeInMs = Date.now(); // 1584192923505
-  obj.ext = arr.pop(); // file extension
-  obj.name = obj.timeInMs + "-" + Math.floor(Math.random() * 90 + 10);
-  obj.saveName = obj.name + "." + obj.ext;
-  return obj;
-};
+// module.exports.getFileName = (file) => {
+//   const arr = file.split("."); // "a.txt" => ['a', 'txt];
+//   const obj = {};
+//   obj.timeInMs = Date.now(); // 1584192923505
+//   obj.ext = arr.pop(); // file extension
+//   obj.name = obj.timeInMs + "-" + Math.floor(Math.random() * 90 + 10);
+//   obj.saveName = obj.name + "." + obj.ext;
+//   return obj;
+// };
 
+const getuuid = (fileName) => {
+  const arr = fileName.split(".");
+  const ext = arr.pop();
+  const uuid = uuid();
+  return uuid + '.' + ext;
+
+}
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, getPath());
   },
   filename: function (req, file, cb) {
-    const filename = test.getFileName(file.originalname);
-    console.log(filename);
-    cb(null, filename.saveName);
+    const filename = getuuid(file.originalname);
+    cb(null, filename);
   }
 });
 
 // const fileFilter = (req, file, cb) => {
-//   console.log('filter_req: ', req);
-//   console.log('filter_file: ', file);
 //     cb(null, false);
 // };
 

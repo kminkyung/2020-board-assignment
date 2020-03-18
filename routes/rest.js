@@ -10,6 +10,8 @@ const memberPath = path.join(__dirname, '..', memberFile);
 const boardFile = 'board.json';
 const boardPath = path.join(__dirname, '..', boardFile);
 const uploadPath = path.join(__dirname, '../upload');
+const commentFile = 'comment.json';
+const commentPath = path.join(__dirname, '..', commentFile);
 
 /* rest router */
 router.get('/get_member_id/:id', getMemberId);
@@ -18,6 +20,7 @@ router.post('/update_member_grade', updateGrade);
 router.post('/update_member_password', updatePassword);
 
 router.post('/write_board', mt.upload.single("upfile"), writeBoard);
+router.post('/write_comment', mt.upload.single("up_cmt_file"), writeComment);
 router.get('/get_board_post/:idx', getBoardPost);
 router.get('/get_board_list/:page', getBoardList);
 router.post('/update_board', updateBoardPost);
@@ -139,7 +142,7 @@ async function writeBoard(req, res, next) {
   info.date = util.convertDate(new Date(), 4);
 
   if(req.file && req.file.size > mb * 10) {
-    res.send({code: 403});
+    res.send(util.alertLocation({msg: "첨부파일 용량이 10MB를 초과했습니다.", loc: "/"}));
     return;
   }
   if (req.file && req.file.size > mb) {
@@ -168,6 +171,55 @@ async function writeBoard(req, res, next) {
     res.send(util.alertLocation({msg: "작성이 완료되었습니다.", loc: "/"}));
   }
 }
+
+
+
+async function writeComment(req, res, next) {
+  const {post_idx, writer, content} = req.body;
+  const comment = [];
+  const info = {};
+  info.post_idx = post_idx;
+  info.cmt_parent = 0;
+  info.cmt_idx = 1;
+  info.writer = writer;
+  info.content = content;
+  info.level = 0;
+  info.removed = false;
+  info.recommended = 0;
+  info.not_recommended = 0;
+  info.date = util.convertDate(new Date(), 4);
+  info.orifile = req.file ? req.file.originalname : '';
+  info.savefile = req.file ? req.file.filename : '';
+
+
+  if(!req.session.user) {
+    res.send(util.alertLocation({msg: "잘못된 접근입니다.", loc: "/"}));
+    return;
+  }
+  if(util.checkFile(commentPath)) { // 파일이 없으면
+    comment.push(info);
+    const createdFile = await util.writeFile(commentPath, comment);
+    console.log(createdFile);
+    res.send(util.alertLocation({msg: "댓글 작성이 완료되었습니다.", loc: "/"}));
+  }
+  else { // 파일이 있으면
+    const content = await util.getFileContent(commentPath);
+    if(content == '') { // 파일 있음 & 내용 없음
+      comment.push(info);
+      const createdComment = await util.writeFile(commentPath, comment);
+    }
+    else { // 파일 있음 & 내용 있음
+      const comment = await util.getFileContent(commentPath);
+      let max = 0;
+      comment.map(v => {})
+    }
+  }
+
+}
+
+
+
+
 
 async function getBoardPost(req, res, next) {
   const idx = req.params.idx;
@@ -246,6 +298,8 @@ async function updateBoardPost(req, res, next) {
   if (!result) console.error(result);
   res.send(util.alertLocation({msg: "수정이 완료되었습니다.", loc: "/"}));
 }
+
+
 
 
 module.exports = router;
