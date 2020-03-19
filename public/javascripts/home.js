@@ -209,6 +209,7 @@ function showDetailModal(tr) {
     modal.find("#userid").text(data.id);
     modal.find("#id").val(data.id);
     modal.find("#idx").val(data.idx);
+    modal.find("#post_id").val(data.idx);
     modal.find("#date").text(data.date);
     modal.find("#title").text(data.title);
     modal.find("#content").text(data.content);
@@ -226,6 +227,24 @@ function showDetailModal(tr) {
       $("#btnModify").addClass("d-none");
     }
   });
+
+    getBoardComment(idx, (data) => {
+    const code = data.map(v => `<tr>
+                                  <th>
+                                    <div>${v.writer}</div>
+                                    <div class="text-secondary f-075 mt-1">${v.date}</div>
+                                  </th>
+                                  <td>
+                                    <div>${v.content}</div>
+                                    <span>${v.savefile !== '' ? `<img src="/public/upload/${v.savefile}" alt="">` : ''}</span>
+                                  </td>
+                                  <td>
+                                    <button type="button" class="btn btn-secondary btn-sm rounded-0">답변</button>
+                                    <button type="button" class="btn btn-secondary btn-sm rounded-0">삭제</button>
+                                  </td>
+                                </tr>`);
+    $("#detail_comment_table").prepend(code);
+  })
 
   $("#board_detail_modal").modal("show");
 }
@@ -247,12 +266,11 @@ function submitWriteForm() {
 
 
 function writeComment(t) {
- const post_idx = $(t).parents("#board_detail_modal").find("#idx").val();
  const comment = $(t).find("#comment").val();
- $("#post_idx").val(post_idx);
+ $("#post_id").val($("#board_detail_modal").find("#idx").val());
   if(comment.trim() == '') {
     alert("댓글 내용을 입력해주세요.");
-    return false;
+    return true;
   }
   return true;
 }
@@ -280,6 +298,20 @@ function getBoardPost(idx, callback) {
       console.log(err);
     },
     success: function (res) {
+      callback(res);
+    }
+  });
+}
+
+function getBoardComment(idx, callback) {
+  $.ajax({
+    type: 'get',
+    url: `/rest/get_board_comment/${idx}`,
+    error: function (err) {
+      console.log(err);
+    },
+    success: function (res) {
+      console.log(res);
       callback(res);
     }
   });

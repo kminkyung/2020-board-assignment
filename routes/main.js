@@ -32,8 +32,8 @@ function getMainPage(req, res, next) {
 async function loginMember (req, res, next) {
   const {id, password} = req.body;
   const filePath = path.join(__dirname, '..', 'member.json');
-  
-  if(!util.checkFile(filePath)) {
+  const no_file = await util.checkFile(filePath);
+  if(!no_file) {
     let data = await util.getFileContent(filePath);
     if(!data) {
       res.send(util.alertLocation({msg: "등록되지 않은 아이디이거나 비밀번호가 일치하지 않습니다.", loc: "/"}));

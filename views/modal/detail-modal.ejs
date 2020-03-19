@@ -43,7 +43,7 @@
               수정
             </button>
             <button type="button" class="btn btn-danger rounded-0 px-4" id="btnRemove"
-                    onclick="confirmRemovePost(ths);">삭제
+                    onclick="confirmRemovePost(this);">삭제
             </button>
             <button type="submit" class="btn btn-secondary rounded-0 px-4 d-none" id="btnUpdate">확인</button>
             <button type="button" class="btn btn-secondary rounded-0 px-4 ml-1" data-dismiss="modal">취소</button>
@@ -54,8 +54,8 @@
           <h6 class="text-left w-100 mb-2">댓글목록</h6>
           <form action="/rest/write_comment" method="post" class="w-100" name="writeCommentForm"
                 onsubmit="return writeComment(this);">
-            <input type="hidden" name="writer" value="<% id %>">
-            <input type="hidden" name="post_idx">
+            <input type="hidden" name="writer" value="<%= id %>">
+            <input type="hidden" name="post_id" id="post_id">
             <table class="table table-bordered text-left m-0" id="detail_comment_table">
               <tr>
                 <th width="150"><%= id %></th>
@@ -63,7 +63,7 @@
                   <input type="text" id="comment" name="content" class="form-control rounded-0" placeholder="댓글 내용을 입력하세요.">
                   <input type="file" id="up_cmt_file" name="up_cmt_file" class="form-control-file py-2" >
                 </td>
-                <td width="80" class="p-0 text-center">
+                <td width="102" class="p-0 text-center">
                   <button type="submit" class="btn btn-sm btn-secondary rounded-0">댓글등록</button>
                 </td>
               </tr>

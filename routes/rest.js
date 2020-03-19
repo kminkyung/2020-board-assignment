@@ -13,16 +13,21 @@ const uploadPath = path.join(__dirname, '../upload');
 const commentFile = 'comment.json';
 const commentPath = path.join(__dirname, '..', commentFile);
 
-/* rest router */
+/* member */
 router.get('/get_member_id/:id', getMemberId);
 router.get('/get_member_list', getMemberList);
 router.post('/update_member_grade', updateGrade);
 router.post('/update_member_password', updatePassword);
 
+
+/* board */
 router.post('/write_board', mt.upload.single("upfile"), writeBoard);
 router.post('/write_comment', mt.upload.single("up_cmt_file"), writeComment);
-router.get('/get_board_post/:idx', getBoardPost);
+
 router.get('/get_board_list/:page', getBoardList);
+router.get('/get_board_post/:idx', getBoardPost);
+router.get('/get_board_comment/:idx', getBoardComment);
+
 router.post('/update_board', updateBoardPost);
 router.post('/remove_board_post/:idx', removeBoardPost);
 
@@ -151,7 +156,8 @@ async function writeBoard(req, res, next) {
     info.savefile = data.file_name;
     fs.unlinkSync(req.file.path);
   }
-  if (util.checkFile(boardPath)) { // board.json 파일이 존재하지 않음
+  const no_file = await util.checkFile(boardPath);
+  if (no_file) { // board.json 파일이 존재하지 않음
     post.push(info);
     let result = await util.writeFile(boardPath, post);
     if (!result) console.error(result);
@@ -161,7 +167,6 @@ async function writeBoard(req, res, next) {
     post = data;
     let max = 0;
     post.forEach((v) => {
-      max = parseInt(v.idx);
       if (parseInt(v.idx) > max) max = parseInt(v.idx);
     });
     info.idx = max + 1;
@@ -175,31 +180,33 @@ async function writeBoard(req, res, next) {
 
 
 async function writeComment(req, res, next) {
-  const {post_idx, writer, content} = req.body;
-  const comment = [];
+  const {post_id, writer, content} = req.body;
+  let comment = [];
   const info = {};
-  info.post_idx = post_idx;
-  info.cmt_parent = 0;
-  info.cmt_idx = 1;
-  info.writer = writer;
+  info.post_id = post_id; // 안들어감
+  info.parent_id = 0;
+  info.cmt_id = 0;
+  info.writer = writer; // 안들어감
   info.content = content;
-  info.level = 0;
+  info.step = 0;
+  info.indent = 0;
   info.removed = false;
   info.recommended = 0;
   info.not_recommended = 0;
+  info.voted_id = [];
   info.date = util.convertDate(new Date(), 4);
   info.orifile = req.file ? req.file.originalname : '';
   info.savefile = req.file ? req.file.filename : '';
-
 
   if(!req.session.user) {
     res.send(util.alertLocation({msg: "잘못된 접근입니다.", loc: "/"}));
     return;
   }
-  if(util.checkFile(commentPath)) { // 파일이 없으면
+  const no_file = await util.checkFile(commentPath);
+  if(no_file) { // 파일이 없으면
     comment.push(info);
-    const createdFile = await util.writeFile(commentPath, comment);
-    console.log(createdFile);
+    const createdFile = await util.writeFile(commentPath, comment); // content를 넣어서 파일 생성
+    console.log('파일없음', createdFile);
     res.send(util.alertLocation({msg: "댓글 작성이 완료되었습니다.", loc: "/"}));
   }
   else { // 파일이 있으면
@@ -207,19 +214,25 @@ async function writeComment(req, res, next) {
     if(content == '') { // 파일 있음 & 내용 없음
       comment.push(info);
       const createdComment = await util.writeFile(commentPath, comment);
+      console.log('파일있음 & 내용없음', createdComment);
+      res.send(util.alertLocation({msg: "댓글 작성이 완료되었습니다.", loc: "/"}));
     }
     else { // 파일 있음 & 내용 있음
-      const comment = await util.getFileContent(commentPath);
-      let max = 0;
-      comment.map(v => {})
+      comment = await util.getFileContent(commentPath);
+      let max_idx = 0;
+      let max_step = 0;
+      comment.map(v => {
+        if (parseInt(v.cmt_id) > max_idx) max_idx = parseInt(v.cmt_id);
+        if (parseInt(v.step) > max_step) max_step = parseInt(v.step);
+        info.cmt_id = max_idx + 1;
+        info.step = max_step + 1
+      });
+      const createdComment = await util.writeFile(commentPath, comment);
+      console.log('파일있음 & 내용있음', createdComment);
+      res.send(util.alertLocation({msg: "댓글 작성이 완료되었습니다.", loc: "/"}));
     }
   }
-
 }
-
-
-
-
 
 async function getBoardPost(req, res, next) {
   const idx = req.params.idx;
@@ -227,6 +240,14 @@ async function getBoardPost(req, res, next) {
   if (!data) console.error(data);
   const post = data.filter(v => v.idx == idx);
   res.json(post[0]);
+}
+
+async function getBoardComment(req, res, next) {
+  const idx = req.params.idx;
+  let data = await util.getFileContent(commentPath);
+  if (!data) console.err(data);
+  const comments = data.filter(v => v.post_id == idx);
+  res.json(comments);
 }
 
 async function getBoardList(req, res, next) {

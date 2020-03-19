@@ -14,7 +14,6 @@ module.exports.alertLocation = (obj) => {
 module.exports.checkFile = (path) => {
   return new Promise((resolve, reject) => {
     fs.stat(path, (err, stats) => {
-      console.log('checkfile: ', err, stats);
       if (err && err.code == 'ENOENT') {  // 파일 존재하지 않음 -> 새로 만들어도 됨 true
         resolve(true);
       }
