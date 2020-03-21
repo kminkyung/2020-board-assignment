@@ -1,3 +1,8 @@
+/* global */
+const size_limit = 1024 * 1024 * 10;
+
+
+
 /* event */
 $("#board_detail_modal").on("hide.bs.modal", function () {
   $("#btnUpdate").addClass("d-none");
@@ -74,39 +79,35 @@ function hideBoard() {
 }
 
 
-
-function drawBoard(page) {
+async function drawBoard(page) {
   const remove_btn_code = `<button type="button" class="btn btn-secondary btn-sm rounded-0" id="btnRemove" onclick="confirmRemovePost(this);">삭제</button>`;
   const showmore_btn_code = `<div class="text-center"><button type="button" class="btn btn-secondary rounded-0" id="btnShowMore" onclick="drawBoard(${page + 1})">더 보기</button></div>`;
-  getBoardList(page, data => {
-    console.log(data);
-    // $("#board_list_table tbody").empty();
-    if (data.list.length == 0) {
-      $("#board_list_table tbody").append(`<tr><td colspan="6">게시글이 없습니다.</td></tr>`);
-    } else {
-      const tbody_code = data.list.map(v => `<tr class="pointer" onclick="showDetailModal(this);">
-                                          <td data-idx="${v.idx}">${v.idx}</td>
-                                          <td>${v.id}</td>
-                                          <td>${v.title}</td>
-                                          <td>${v.content}</td>
-                                          <td>${v.savefile !== '' ? '💾' : v.savefile}</td>
-                                          <td>${v.date}</td>
-                                          <td>
-                                            ${grade == 9 ? remove_btn_code : id == v.id ? remove_btn_code : ''}
-                                          </td>
-                                        </tr>`);
-      $("#board_list_table tbody").append(tbody_code);
-    }
-    
-    if (data.is_next !== true) {
-      $("#btnShowMore").remove();
-    } else {
-      $("#board_list_container").append(showmore_btn_code);
-    }
-    
-  });
-}
+  const data = await getBoardList(page);
+  console.log(data);
+  // $("#board_list_table tbody").empty();
+  if (data.list.length == 0) {
+    $("#board_list_table tbody").append(`<tr><td colspan="6">게시글이 없습니다.</td></tr>`);
+  } else {
+    const tbody_code = data.list.map(v => `<tr class="pointer" onclick="showDetailModal(this);">
+                                            <td data-idx="${v.idx}">${v.idx}</td>
+                                            <td>${v.id}</td>
+                                            <td>${v.title} ${v.cmt_count !== 0 ? `<span class="badge badge-pill badge-dark">${v.cmt_count}</span>` : ''}</td>
+                                            <td>${v.content}</td>
+                                            <td>${v.savefile !== '' ? '💾' : v.savefile}</td>
+                                            <td>${v.date}</td>
+                                            <td>
+                                              ${grade == 9 ? remove_btn_code : id == v.id ? remove_btn_code : ''}
+                                            </td>
+                                         </tr>`);
+    $("#board_list_table tbody").append(tbody_code);
+  }
 
+  if (data.is_next !== true) {
+    $("#btnShowMore").remove();
+  } else {
+    $("#board_list_container").append(showmore_btn_code);
+  }
+}
 
 
 
@@ -197,10 +198,23 @@ function removePost(idx, callback) {
   })
 }
 
-
 function showWriteModal() {
   $("#board_write_modal").modal("show");
 }
+
+function cancelModify(t) {
+  const idx = $(t).parents("#board_detail_modal").find("input[name='idx']").val();
+  const modal = $(t).parents("#board_detail_modal");
+  $("input[name='title']").remove();
+  $("textarea[name='content']").remove();
+  console.log(idx);
+  getBoardPost(idx, function (data) {
+    console.log(data);
+    modal.find("#title").text(data.title);
+    modal.find("#content").text(data.content);
+  });
+}
+
 
 function showDetailModal(tr) {
   const idx = $(tr).children("td:first-child").data("idx");
@@ -216,8 +230,9 @@ function showDetailModal(tr) {
     if (data.orifile !== "") {
       data.orifile = data.orifile.split(" ");
       data.savefile = data.savefile.split(" ");
-      console.log(data.savefile);
-      const code = data.orifile.map((v, i) => `<a href="/download?filename=${data.savefile[i]}&downname=${v}" class="d-inline-block">${v}</a>`);
+      data.savefile.pop();
+      data.orifile.pop();
+      const code = data.orifile.map((v, i) => `<div><a href="/download?filename=${data.savefile[i]}&downname=${v}" class="d-inline-block">${v}</a></div>`);
       modal.find("#file").html(code);
     }
 
@@ -228,31 +243,56 @@ function showDetailModal(tr) {
     }
   });
 
+  $("#detail_comment_table > tbody").empty();
     getBoardComment(idx, (data) => {
-    const code = data.map(v => `<tr>
+      const code = data.map(v => `<tr data-idx="${v.cmt_id}">
                                   <th>
                                     <div>${v.writer}</div>
                                     <div class="text-secondary f-075 mt-1">${v.date}</div>
                                   </th>
                                   <td>
-                                    <div>${v.content}</div>
-                                    <span>${v.savefile !== '' ? `<img src="/public/upload/${v.savefile}" alt="">` : ''}</span>
+                                    <p>${v.content}</p>
+                                    <div class="img-container">${v.savefile !== '' ? `<img src="/upload/${v.savefile}" alt="" class="cmt-img">` : ''}</div>
                                   </td>
                                   <td>
-                                    <button type="button" class="btn btn-secondary btn-sm rounded-0">답변</button>
-                                    <button type="button" class="btn btn-secondary btn-sm rounded-0">삭제</button>
+                                    <button type="button" class="btn btn-secondary btn-sm rounded-0" onclick="replyComment(this);">답변</button>
+                                    ${id == v.writer || grade == 9 ? `<button type="button" class="btn btn-secondary btn-sm rounded-0">삭제</button>` : ''}
                                   </td>
                                 </tr>`);
-    $("#detail_comment_table").prepend(code);
-  })
+    $("#detail_comment_table > tbody").prepend(code);
+  });
 
   $("#board_detail_modal").modal("show");
 }
 
+function replyComment(t) {
+  $(t).addClass("d-none");
+  const td = $(t).parents("tr").find("td").first();
+  const cmt_id = $(t).parents("tr").data("idx");
+  const table = `<table class="table table-borderless border-top mb-0 mt-3" id="cmt_reply_table">
+                  <tr>
+                    <th width="100" class="f-0875">${id}</th>
+                    <td></td>
+                  </tr>
+                </table>`;
+  const input_text = `<input type="text" name="cmt_reply" class="form-control rounded-0" placeholder="댓글 내용을 입력하세요.">`;
+  const input_file = `<div class="d-flex justify-content-between align-items-center" id="input_btn_group"><input type="file" name="cmt_reply_file" class="form-control-file py-2 w-75"></div>`;
+  const reply_btn = `<button type="button" class="btn btn-secondary btn-sm rounded-0">등록</button>`;
+  td.append(table);
+  $("#cmt_reply_table td").append(input_text, input_file);
+  $("#input_btn_group").append(reply_btn);
+  console.log(td);
+  console.log(cmt_id);
+}
 
 function submitWriteForm() {
   const title = $("#write_table").find("input[name='title']").val();
   const content = $("#write_table").find("textarea[name='content']").val();
+  const file_size = $("#write_table").find("input[name='upfile']")[0].files[0].size;
+
+  if(file_size > size_limit) {
+    alert("첨부파일은 10MB를 넘을 수 없습니다.");
+  }
   if (title.trim() == '') {
     alert("제목을 입력해주세요.");
     return false;
@@ -266,11 +306,19 @@ function submitWriteForm() {
 
 
 function writeComment(t) {
- const comment = $(t).find("#comment").val();
- $("#post_id").val($("#board_detail_modal").find("#idx").val());
-  if(comment.trim() == '') {
+ const post_id = $(t).parents("#board_detail_modal").find("input[name='idx']").val();
+ $("input[name='post_id']").val(post_id);
+ const content = $(t).parents("#detail_comment_table").find("#comment").val();
+ const file_size = $(t).parents("#detail_comment_table").find("#up_cmt_file")[0].files[0].size;
+
+  if(file_size > size_limit) {
+    alert("첨부파일은 10MB를 넘을 수 없습니다.");
+    return false;
+  }
+  if(content.trim() == '') {
     alert("댓글 내용을 입력해주세요.");
-    return true;
+    $("#comment").focus();
+    return false;
   }
   return true;
 }
@@ -278,16 +326,18 @@ function writeComment(t) {
 
 
 function getBoardList(page, callback) {
-  $.ajax({
-    type: 'get',
-    url: `/rest/get_board_list/${page}`,
-    error: function (err) {
-      console.log(err);
-    },
-    success: function (res) {
-      callback(res);
-    }
-  })
+  return new Promise((resolve, reject) => {
+    $.ajax({
+      type: 'get',
+      url: `/rest/get_board_list/${page}`,
+      error: function (err) {
+        reject(err);
+      },
+      success: function (res) {
+        resolve(res)
+      }
+    })
+  });
 }
 
 function getBoardPost(idx, callback) {
@@ -295,13 +345,14 @@ function getBoardPost(idx, callback) {
     type: 'get',
     url: `/rest/get_board_post/${idx}`,
     error: function (err) {
-      console.log(err);
+        console.log(err);
     },
     success: function (res) {
       callback(res);
     }
   });
 }
+
 
 function getBoardComment(idx, callback) {
   $.ajax({
@@ -311,11 +362,11 @@ function getBoardComment(idx, callback) {
       console.log(err);
     },
     success: function (res) {
-      console.log(res);
       callback(res);
     }
   });
 }
+
 
 function getMemberList(callback) {
   $.ajax({

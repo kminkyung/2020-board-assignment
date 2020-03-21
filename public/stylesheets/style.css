@@ -86,4 +86,20 @@ textarea {
   padding: 5px 7px;
 }
 
+.img-container {
+  margin-top: 0.75rem;
+  width: 100px;
+  height: 100px;
+  overflow: hidden;
+}
+.cmt-img {
+  width: 100px;
+}
 
+#cmt_reply_table th {
+  vertical-align: top !important;
+}
+
+#cmt_reply_table tr {
+  border-top: 1px solid #dee2e6;
+}

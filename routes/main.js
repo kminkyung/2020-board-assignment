@@ -9,8 +9,10 @@ const uploadPath = path.join(__dirname, '../public/upload');
 
 
 router.get('/', getMainPage);
+
 router.post('/login', loginMember);
 router.get('/logout', logoutMember);
+
 router.get('/download/', downFile);
 
 

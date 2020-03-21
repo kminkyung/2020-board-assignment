@@ -198,6 +198,7 @@ async function writeComment(req, res, next) {
   info.orifile = req.file ? req.file.originalname : '';
   info.savefile = req.file ? req.file.filename : '';
 
+
   if(!req.session.user) {
     res.send(util.alertLocation({msg: "잘못된 접근입니다.", loc: "/"}));
     return;
@@ -207,7 +208,7 @@ async function writeComment(req, res, next) {
     comment.push(info);
     const createdFile = await util.writeFile(commentPath, comment); // content를 넣어서 파일 생성
     console.log('파일없음', createdFile);
-    res.send(util.alertLocation({msg: "댓글 작성이 완료되었습니다.", loc: "/"}));
+    res.send(util.alertLocation({msg: "댓글이 등록되었습니다.", loc: "/"}));
   }
   else { // 파일이 있으면
     const content = await util.getFileContent(commentPath);
@@ -215,21 +216,23 @@ async function writeComment(req, res, next) {
       comment.push(info);
       const createdComment = await util.writeFile(commentPath, comment);
       console.log('파일있음 & 내용없음', createdComment);
-      res.send(util.alertLocation({msg: "댓글 작성이 완료되었습니다.", loc: "/"}));
+      res.send(util.alertLocation({msg: "댓글이 등록되었습니다.", loc: "/"}));
     }
     else { // 파일 있음 & 내용 있음
       comment = await util.getFileContent(commentPath);
       let max_idx = 0;
       let max_step = 0;
-      comment.map(v => {
+      let registered = comment.filter(v => v.post_id == post_id); // 같은 게시글의 댓글들
+      registered.map(v => {
         if (parseInt(v.cmt_id) > max_idx) max_idx = parseInt(v.cmt_id);
-        if (parseInt(v.step) > max_step) max_step = parseInt(v.step);
+        if (parseInt(v.step) > max_step) max_step = parseInt(v.step); // 이렇게 들어가면 안됨
         info.cmt_id = max_idx + 1;
         info.step = max_step + 1
       });
+      comment.push(info);
       const createdComment = await util.writeFile(commentPath, comment);
       console.log('파일있음 & 내용있음', createdComment);
-      res.send(util.alertLocation({msg: "댓글 작성이 완료되었습니다.", loc: "/"}));
+      res.send(util.alertLocation({msg: "댓글이 등록되었습니다.", loc: "/"}));
     }
   }
 }
@@ -250,6 +253,8 @@ async function getBoardComment(req, res, next) {
   res.json(comments);
 }
 
+
+
 async function getBoardList(req, res, next) {
   const page = parseInt(req.params.page);
   const list_count = 10;
@@ -268,10 +273,24 @@ async function getBoardList(req, res, next) {
   start_index = end_index - list_count;
   page_count = Math.ceil(total / list_count);
 
+  let comments = await util.getFileContent(commentPath);
+  if (!comments) console.err(comments);
+
+  for(let i=0; i<data.length; i++) {
+    data[i].cmt_count = 0;
+    for(let j=0; j<comments.length; j++) {
+      if(data[i].idx == comments[j].post_id) {
+        data[i].cmt_count++;
+      }
+    }
+  }
+
   if (page + 1 < page_count) is_next = true;
   const list = data.slice(Math.sign(start_index) === -1 ? 0 : start_index, end_index).sort((a, b) => b.idx - a.idx);
+
   result.list = list;
   result.is_next = is_next;
+
   res.json(result);
 }
 
@@ -303,7 +322,7 @@ async function removeBoardPost(req, res, next) {
 
 async function updateBoardPost(req, res, next) {
   const {idx, title, content} = req.body;
-  const {id, grade} = req.body.session.user;
+  const {id, grade} = req.session.user;
   let data = await util.getFileContent(boardPath);
   data.map(v => {
     if (v.idx == idx) {
@@ -312,7 +331,7 @@ async function updateBoardPost(req, res, next) {
     }
   });
   if (id !== data.id && grade !== 9) {
-    res.send(util.alertLocation({msg: "권한이 없습니다..", loc: "/"}));
+    res.send(util.alertLocation({msg: "권한이 없습니다.", loc: "/"}));
     return;
   }
   let result = util.writeFile(boardPath, data);

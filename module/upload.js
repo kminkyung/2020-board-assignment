@@ -3,12 +3,12 @@ const fs = require("fs");
 const path = require("path");
 const util = require("./util");
 const test = require("./upload");
-const uuid = require("uuid");
+const {v1} = require("uuid");
 
-const getPath = () => {
+const getPath = async () => {
   const directory = path.join(__dirname, "../public/upload");
-  console.log('true|false 가 나와야 하는데..', util.checkFile(directory));
-  if (util.checkFile(directory)) {
+  const no_file = await util.checkFile(directory);
+  if (no_file) {
     fs.mkdir(directory, (err) => {
       if (err) {
         console.error("폴더 생성 실패");
@@ -33,14 +33,14 @@ const getPath = () => {
 const getuuid = (fileName) => {
   const arr = fileName.split(".");
   const ext = arr.pop();
-  const uuid = uuid();
-  return uuid + '.' + ext;
-
-}
+  let name = v1();
+  return name + '.' + ext;
+};
 
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, getPath());
+  destination: async function (req, file, cb) {
+    const path = await getPath();
+    cb(null, path);
   },
   filename: function (req, file, cb) {
     const filename = getuuid(file.originalname);
