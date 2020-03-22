@@ -152,6 +152,8 @@ function modifyPost(btn) {
   $("textarea[name='content']").val(content_val);
   $("#btnUpdate").removeClass("d-none");
   $("#btnModify").addClass("d-none");
+  $("#btnCancel").prop("disabled", false);
+
 }
 
 function submitUpdatePost(form) {
@@ -205,9 +207,12 @@ function showWriteModal() {
 function cancelModify(t) {
   const idx = $(t).parents("#board_detail_modal").find("input[name='idx']").val();
   const modal = $(t).parents("#board_detail_modal");
+ $("#btnUpdate").addClass("d-none");
+ $("#btnModify").removeClass("d-none");
+ $("#btnCancel").prop("disabled", true);
+
   $("input[name='title']").remove();
   $("textarea[name='content']").remove();
-  console.log(idx);
   getBoardPost(idx, function (data) {
     console.log(data);
     modal.find("#title").text(data.title);
@@ -246,17 +251,23 @@ function showDetailModal(tr) {
   $("#detail_comment_table > tbody").empty();
     getBoardComment(idx, (data) => {
       const code = data.map(v => `<tr data-idx="${v.cmt_id}">
-                                  <th>
+                                  <th class="indent-${v.indent}">
                                     <div>${v.writer}</div>
                                     <div class="text-secondary f-075 mt-1">${v.date}</div>
                                   </th>
-                                  <td>
-                                    <p>${v.content}</p>
-                                    <div class="img-container">${v.savefile !== '' ? `<img src="/upload/${v.savefile}" alt="" class="cmt-img">` : ''}</div>
+                                  <td class="indent-${v.indent} position-relative">
+                                    <p>${ !v.removed ? v.content : `<span class="f-0875 font-italic text-secondary">댓글이 삭제되었습니다.</span>`}
+                                   </p>
+                                   ${v.savefile !== '' ? `<a href="/upload/${v.savefile}" class="img-container"><img src="/upload/${v.savefile}" alt="" class="cmt-img"></a>` : ''}
+                                   <ul class="recommand-box">
+                                    <li class="pointer" onclick="recommendComment(this);">👍🏻<span class="f-0875 text-info">${v.recommended}</span></li>
+                                    <li class="pointer" onclick="decommendComment(this);">👎🏻<span class="f-0875 text-secondary">${v.not_recommended}</span></li>
+                                   </ul>
                                   </td>
                                   <td>
-                                    <button type="button" class="btn btn-secondary btn-sm rounded-0" onclick="replyComment(this);">답변</button>
-                                    ${id == v.writer || grade == 9 ? `<button type="button" class="btn btn-secondary btn-sm rounded-0">삭제</button>` : ''}
+                                    <button type="button" class="btn btn-secondary btn-sm rounded-0" id="btnComment" onclick="replyComment(this);">답변</button>
+                                    ${!v.removed ? id == v.writer || grade == 9 ? `<button type="button" class="btn btn-secondary btn-sm rounded-0" id="btnModify" onclick="modifyComment(this);">수정</button>` : '' : ''}
+                                    ${!v.removed ? id == v.writer || grade == 9 ? `<button type="button" class="btn btn-danger btn-sm rounded-0" id="btnRemove" onclick="removeComment(this);">삭제</button>` : '' : ''}
                                   </td>
                                 </tr>`);
     $("#detail_comment_table > tbody").prepend(code);
@@ -265,27 +276,184 @@ function showDetailModal(tr) {
   $("#board_detail_modal").modal("show");
 }
 
-function replyComment(t) {
-  $(t).addClass("d-none");
-  const td = $(t).parents("tr").find("td").first();
+function updateComment(t) {
+  const comment = $(t).parent().prev("td").children("input[name='modify_cmt_input']").val();
+  const post_id = $(t).parents("#board_detail_modal").find("input[name='idx']").val();
   const cmt_id = $(t).parents("tr").data("idx");
-  const table = `<table class="table table-borderless border-top mb-0 mt-3" id="cmt_reply_table">
-                  <tr>
-                    <th width="100" class="f-0875">${id}</th>
-                    <td></td>
-                  </tr>
-                </table>`;
-  const input_text = `<input type="text" name="cmt_reply" class="form-control rounded-0" placeholder="댓글 내용을 입력하세요.">`;
-  const input_file = `<div class="d-flex justify-content-between align-items-center" id="input_btn_group"><input type="file" name="cmt_reply_file" class="form-control-file py-2 w-75"></div>`;
-  const reply_btn = `<button type="button" class="btn btn-secondary btn-sm rounded-0">등록</button>`;
-  td.append(table);
-  $("#cmt_reply_table td").append(input_text, input_file);
-  $("#input_btn_group").append(reply_btn);
-  console.log(td);
-  console.log(cmt_id);
+
+  if(comment.trim() == '') {
+    alert("댓글 내용을 입력해주세요.");
+    $("input[name='modify_cmt_input']").focus();
+    return;
+  }
+
+  $.ajax({
+    type: 'post',
+    url: `/rest/update_comment`,
+    data: {post_id, cmt_id, comment},
+    error: function (err) {
+      console.log(err);
+    },
+    success: function (res) {
+      console.log(res);
+      if(res.code == 401) {
+        alert("권한이 없습니다.");
+        return;
+      }
+      if(res.code == 200) {
+        alert("댓글 수정이 완료되었습니다.");
+        location.href = '/';
+      }
+    }
+  });
 }
 
-function submitWriteForm() {
+
+
+function modifyComment(t) {
+  const p = $(t).parent().prev("td").children("p");
+  const comment = p.text().trim();
+  const update_btn = `<button type="button" class="btn btn-info btn-sm rounded-0" id="btnUpdateComment" onclick="updateComment(this);">확인</button>`;
+  const cancel_btn = `<button type="button" class="btn btn-secondary btn-sm rounded-0 ml-1" id="btnCancelModify" onclick="cancelModifyComment(this);">취소</button>`;
+  const input = `<input type="text" class="form-control mb-4" name="modify_cmt_input">`;
+
+  p.addClass("d-none");
+  $(t).addClass("d-none");
+  $(t).parent("td").children("#btnRemove").addClass("d-none");
+  $(t).parent().prev("td").prepend(input);
+  $("input[name='modify_cmt_input']").val(comment);
+  $(t).parent().append(update_btn, cancel_btn);
+}
+
+function cancelModifyComment(t) {
+  $(t).parent().prev("td").children("p").removeClass("d-none");
+  $(t).parent("td").children("#btnRemove").removeClass("d-none");
+  $(t).parent("td").children("#btnModify").removeClass("d-none");
+  $(t).parent("td").children("#btnUpdateComment").remove();
+  $(t).remove();
+  $("input[name='modify_cmt_input']").remove();
+}
+
+
+function recommendComment(t) {
+  if(!confirm("이 댓글을 추천하시겠습니까?")) {
+    return;
+  }
+  else {
+    const post_id = $(t).parents("#board_detail_modal").find("input[name='idx']").val();
+    const cmt_id = $(t).parents("tr").data("idx");
+
+    $.ajax({
+      type: 'get',
+      url: `/rest/recommend_comment/${post_id}/${cmt_id}`,
+      error: function (err) {
+        console.log(err);
+      },
+      success: function (res) {
+        if(res.code == 400) {
+          alert("댓글당 추천 또는 비추천은 한번만 할 수 있습니다.");
+        }
+        else if(res.code == 200) {
+          alert("댓글을 추천했습니다.");
+          location.href = '/';
+        }
+      }
+    });
+  }
+}
+
+function decommendComment(t) {
+  if(!confirm("이 댓글을 비추천하시겠습니까?")) {
+    return;
+  }
+  else {
+    const post_id = $(t).parents("#board_detail_modal").find("input[name='idx']").val();
+    const cmt_id = $(t).parents("tr").data("idx");
+
+    $.ajax({
+      type: 'get',
+      url: `/rest/decommend_comment/${post_id}/${cmt_id}`,
+      error: function (err) {
+        console.log(err);
+      },
+      success: function (res) {
+        if(res.code == 400) {
+          alert("댓글당 추천 또는 비추천은 한번만 할 수 있습니다.");
+        }
+        else if(res.code == 200) {
+         alert("댓글을 비추천했습니다.");
+          location.href = '/';
+        }
+      }
+    });
+  }
+
+
+}
+
+function removeComment(t) {
+  if(!confirm("정말로 댓글을 삭제하시겠습니까?")) {
+    return;
+  }
+  else {
+    const post_id = $(t).parents("#board_detail_modal").find("input[name='idx']").val();
+    const cmt_id = $(t).parents("tr").data("idx");
+    $.ajax({
+      type: 'get',
+      url: `/rest/remove_board_comment/${post_id}/${cmt_id}`,
+      error: function (err) {
+        console.log(err);
+      },
+      success: function (res) {
+        if(res.code == 401) {
+          alert("댓글 삭제 권한이 없습니다.");
+          location.href = '/';
+        }
+        else if(res.code == 200) {
+          alert("댓글이 삭제되었습니다.");
+          location.href = '/';
+        }
+      }
+    });
+  }
+};
+
+function cancelReply(t) {
+  $(t).parents("tr").prev().find("#btnComment").prop("disabled", false);
+  $(t).parents("tr").remove();
+}
+
+function replyComment(t) {
+  event.preventDefault();
+  event.stopPropagation();
+  $(t).prop("disabled", true);
+
+  const tr = $(t).parents("tr");
+  const form = `<tr>
+                  <th width="100" class="f-0875">↳ ${id}</th>
+                  <td>
+                    <form action="/rest/write_comment" method="post" enctype="multipart/form-data" name="replyCommentForm" onsubmit="return writeComment(this);">
+                      <input type="hidden" name="post_id" id="post_id">
+                      <input type="hidden" name="parent_id" id="parent_id">
+                      <input type="text" name="content" class="form-control rounded-0" placeholder="댓글 내용을 입력하세요.">
+                      <div class="d-flex justify-content-between align-items-center" id="input_btn_group">
+                        <input type="file" name="up_cmt_file" class="form-control-file py-2 w-75">
+                      </div>
+                    </form>
+                  </td>
+                  <td>
+                    <button type="submit" class="btn btn-secondary btn-sm rounded-0" onclick="submitCommentForm(this);">등록</button>
+                    <button type="button" class="btn btn-sm btn-secondary rounded-0" onclick="cancelReply(this);">취소</button>
+                  </td>
+                  </tr>`;
+  tr.after(form);
+}
+
+function submitCommentForm(t) {
+  $(t).parents("tr").find("form").submit();
+}
+
+function submitBoardForm() {
   const title = $("#write_table").find("input[name='title']").val();
   const content = $("#write_table").find("textarea[name='content']").val();
   const file_size = $("#write_table").find("input[name='upfile']")[0].files[0].size;
@@ -305,17 +473,29 @@ function submitWriteForm() {
 }
 
 
-function writeComment(t) {
- const post_id = $(t).parents("#board_detail_modal").find("input[name='idx']").val();
- $("input[name='post_id']").val(post_id);
- const content = $(t).parents("#detail_comment_table").find("#comment").val();
- const file_size = $(t).parents("#detail_comment_table").find("#up_cmt_file")[0].files[0].size;
+function writeComment(form) {
+  event.stopPropagation();
 
-  if(file_size > size_limit) {
+  const post_id = $(form).parents("#board_detail_modal").find("input[name='idx']").val();
+  const content = $(form).find("input[type='text']").val();
+  const cmt_file = $(form).find("input[type='file']")[0].files[0];
+  let file_size = 0;
+  $("input[name='post_id']").val(post_id);
+
+  // 대댓글인 경우
+  const parent_id = $(form).parents("tr").prev().data("idx");
+  $("input[name='parent_id']").val(parent_id);
+
+
+  if (cmt_file !== undefined) {
+    file_size = cmt_file.size;
+  }
+
+  if (file_size > size_limit) {
     alert("첨부파일은 10MB를 넘을 수 없습니다.");
     return false;
   }
-  if(content.trim() == '') {
+  if (content.trim() == '') {
     alert("댓글 내용을 입력해주세요.");
     $("#comment").focus();
     return false;

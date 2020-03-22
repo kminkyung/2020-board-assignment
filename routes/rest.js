@@ -23,6 +23,8 @@ router.post('/update_member_password', updatePassword);
 /* board */
 router.post('/write_board', mt.upload.single("upfile"), writeBoard);
 router.post('/write_comment', mt.upload.single("up_cmt_file"), writeComment);
+router.get('/recommend_comment/:post_id/:cmt_id', recommendComment);
+router.get('/decommend_comment/:post_id/:cmt_id', decommendComment);
 
 router.get('/get_board_list/:page', getBoardList);
 router.get('/get_board_post/:idx', getBoardPost);
@@ -30,6 +32,8 @@ router.get('/get_board_comment/:idx', getBoardComment);
 
 router.post('/update_board', updateBoardPost);
 router.post('/remove_board_post/:idx', removeBoardPost);
+router.get('/remove_board_comment/:post_id/:cmt_id', removeBoardComment);
+router.post('/update_comment', updateComment);
 
 
 /* REST - Member */
@@ -107,7 +111,7 @@ const divideFile = async (size, path, name, oriname) => {
     const div_count = parseInt(Math.ceil(size / mb));
     const file_path = path;
     fs.readFile(file_path, function (err, data) {
-      if(err) {
+      if (err) {
         reject(err);
         return;
       }
@@ -131,22 +135,20 @@ const divideFile = async (size, path, name, oriname) => {
 };
 
 
-
-
 async function writeBoard(req, res, next) {
-  const {id, title, content} = req.body;
+  const {title, content} = req.body;
   const mb = 1024 * 1024;
   let post = [];
   const info = {};
   info.idx = 1;
-  info.id = id;
+  info.id = req.session.user.id;
   info.title = title;
   info.content = content;
   info.orifile = req.file ? req.file.originalname : '';
   info.savefile = req.file ? req.file.filename : '';
   info.date = util.convertDate(new Date(), 4);
 
-  if(req.file && req.file.size > mb * 10) {
+  if (req.file && req.file.size > mb * 10) {
     res.send(util.alertLocation({msg: "첨부파일 용량이 10MB를 초과했습니다.", loc: "/"}));
     return;
   }
@@ -178,17 +180,16 @@ async function writeBoard(req, res, next) {
 }
 
 
-
 async function writeComment(req, res, next) {
-  const {post_id, writer, content} = req.body;
+  const {post_id, parent_id, content} = req.body;
   let comment = [];
   const info = {};
-  info.post_id = post_id; // 안들어감
-  info.parent_id = 0;
-  info.cmt_id = 0;
-  info.writer = writer; // 안들어감
+  info.post_id = post_id;
+  info.parent_id = parent_id == undefined ? 0 : parent_id;
+  info.cmt_id = 1;
+  info.writer = req.session.user.id;
   info.content = content;
-  info.step = 0;
+  info.step = 1;
   info.indent = 0;
   info.removed = false;
   info.recommended = 0;
@@ -198,44 +199,113 @@ async function writeComment(req, res, next) {
   info.orifile = req.file ? req.file.originalname : '';
   info.savefile = req.file ? req.file.filename : '';
 
-
-  if(!req.session.user) {
+  if (!req.session.user) {
     res.send(util.alertLocation({msg: "잘못된 접근입니다.", loc: "/"}));
     return;
   }
   const no_file = await util.checkFile(commentPath);
-  if(no_file) { // 파일이 없으면
+  if (no_file) { // 파일이 없으면
     comment.push(info);
     const createdFile = await util.writeFile(commentPath, comment); // content를 넣어서 파일 생성
-    console.log('파일없음', createdFile);
+    if (!createdFile) console.log("파일쓰기 실패");
     res.send(util.alertLocation({msg: "댓글이 등록되었습니다.", loc: "/"}));
-  }
-  else { // 파일이 있으면
+  } else { // 파일이 있으면
     const content = await util.getFileContent(commentPath);
-    if(content == '') { // 파일 있음 & 내용 없음
+    if (content == '') { // 파일 있음 & 내용 없음
       comment.push(info);
       const createdComment = await util.writeFile(commentPath, comment);
-      console.log('파일있음 & 내용없음', createdComment);
+      if (!createdComment) console.log("파일쓰기 실패");
       res.send(util.alertLocation({msg: "댓글이 등록되었습니다.", loc: "/"}));
-    }
-    else { // 파일 있음 & 내용 있음
+    } else { // 파일 있음 & 내용 있음
       comment = await util.getFileContent(commentPath);
       let max_idx = 0;
-      let max_step = 0;
-      let registered = comment.filter(v => v.post_id == post_id); // 같은 게시글의 댓글들
-      registered.map(v => {
-        if (parseInt(v.cmt_id) > max_idx) max_idx = parseInt(v.cmt_id);
-        if (parseInt(v.step) > max_step) max_step = parseInt(v.step); // 이렇게 들어가면 안됨
-        info.cmt_id = max_idx + 1;
-        info.step = max_step + 1
+      let post_comments = comment.filter(v => v.post_id == post_id); // 같은 게시글의 댓글들
+
+      post_comments.map(v => {
+        if (parseInt(v.cmt_id) > max_idx) { // cmt_id 구하기
+          max_idx = parseInt(v.cmt_id);
+        }
+        if (info.parent_id == 0) { // 부모댓글 없는 경우
+          info.step = v.step + 1;
+        } else if (v.cmt_id == info.parent_id) { // 부모댓글 있는 경우
+          info.indent = v.indent + 1;
+          info.step = v.step + 1;
+        } else {
+          v.step++;
+        }
       });
-      comment.push(info);
+
+      for (let i = 0; i < post_comments.length; i++) {
+        let target_index = comment.findIndex((v, i) => v.post_id == post_comments[0].post_id);
+        if (target_index < 0) break;
+        comment.splice(target_index, 1);
+      }
+      info.cmt_id = max_idx + 1;
+
+
+      post_comments.push(info);
+      for (let i = 0; i < post_comments.length; i++) {
+        comment.push(post_comments[i]);
+      }
+
       const createdComment = await util.writeFile(commentPath, comment);
-      console.log('파일있음 & 내용있음', createdComment);
+      if (!createdComment) console.log("파일쓰기 실패");
       res.send(util.alertLocation({msg: "댓글이 등록되었습니다.", loc: "/"}));
     }
   }
 }
+
+
+async function recommendComment(req, res, next) {
+  const {post_id, cmt_id} = req.params;
+  const id = req.session.user.id;
+
+  let data = await util.getFileContent(commentPath);
+  if (!data) console.err(data);
+
+  const target = data.find(v => v.post_id == post_id && v.cmt_id == cmt_id);
+  if (target.voted_id.indexOf(id) !== -1) {
+    res.json({code: 400});
+    return;
+  }
+
+  data.map(v => {
+    if (v.post_id == post_id && v.cmt_id == cmt_id) {
+      v.recommended += 1;
+      v.voted_id.push(id);
+    }
+  });
+
+  const updatedFile = await util.writeFile(commentPath, data);
+  if (!updatedFile) console.error(updatedFile);
+  res.json({code: 200});
+}
+
+async function decommendComment(req, res, next) {
+  const {post_id, cmt_id} = req.params;
+  const id = req.session.user.id;
+
+  let data = await util.getFileContent(commentPath);
+  if (!data) console.err(data);
+
+  const target = data.find(v => v.post_id == post_id && v.cmt_id == cmt_id);
+  if (target.voted_id.indexOf(id) !== -1) {
+    res.json({code: 400});
+    return;
+  }
+
+  data.map(v => {
+    if (v.post_id == post_id && v.cmt_id == cmt_id) {
+      v.not_recommended += 1;
+      v.voted_id.push(id);
+    }
+  });
+
+  const updatedFile = await util.writeFile(commentPath, data);
+  if (!updatedFile) console.error(updatedFile);
+  res.json({code: 200});
+}
+
 
 async function getBoardPost(req, res, next) {
   const idx = req.params.idx;
@@ -250,9 +320,9 @@ async function getBoardComment(req, res, next) {
   let data = await util.getFileContent(commentPath);
   if (!data) console.err(data);
   const comments = data.filter(v => v.post_id == idx);
+  comments.sort((a, b) => a.parent_id - b.parent_id).sort((a, b) => a.step - b.step);
   res.json(comments);
 }
-
 
 
 async function getBoardList(req, res, next) {
@@ -274,12 +344,12 @@ async function getBoardList(req, res, next) {
   page_count = Math.ceil(total / list_count);
 
   let comments = await util.getFileContent(commentPath);
-  if (!comments) console.err(comments);
+  if (!comments) console.error(comments);
 
-  for(let i=0; i<data.length; i++) {
+  for (let i = 0; i < data.length; i++) {
     data[i].cmt_count = 0;
-    for(let j=0; j<comments.length; j++) {
-      if(data[i].idx == comments[j].post_id) {
+    for (let j = 0; j < comments.length; j++) {
+      if (data[i].idx == comments[j].post_id) {
         data[i].cmt_count++;
       }
     }
@@ -307,10 +377,10 @@ async function removeBoardPost(req, res, next) {
   }
 
   let savefile = data[removeIndex].savefile;
-  if(savefile !== "") {
+  if (savefile !== "") {
     savefile = savefile.split(" ");
     savefile.pop();
-    for(let i=0; i<savefile.length; i++) {
+    for (let i = 0; i < savefile.length; i++) {
       fs.unlinkSync(path.join(__dirname, `../public/upload/${savefile[i]}`));
     }
   }
@@ -320,10 +390,33 @@ async function removeBoardPost(req, res, next) {
   res.send({code: 200});
 }
 
+async function removeBoardComment(req, res, next) {
+  const {post_id, cmt_id} = req.params;
+  const {id, grade} = req.session.user;
+  console.log(id, grade);
+
+  let data = await util.getFileContent(commentPath);
+  if (!data) console.error(data);
+  const target = data.find(v => v.post_id == post_id && v.cmt_id == cmt_id);
+  if (target.writer !== id || grade !== 9) {
+    res.send({code: 401});
+    return;
+  }
+  data.map(v => {
+    if (v.post_id == post_id && v.cmt_id == cmt_id) {
+      v.removed = true;
+    }
+  });
+  const updatedFile = await util.writeFile(commentPath, data);
+  if (!updatedFile) console.error(updatedFile);
+  res.send({code: 200});
+}
+
+
 async function updateBoardPost(req, res, next) {
   const {idx, title, content} = req.body;
   const {id, grade} = req.session.user;
-  let data = await util.getFileContent(boardPath);
+  const data = await util.getFileContent(boardPath);
   data.map(v => {
     if (v.idx == idx) {
       v.title = title;
@@ -339,6 +432,30 @@ async function updateBoardPost(req, res, next) {
   res.send(util.alertLocation({msg: "수정이 완료되었습니다.", loc: "/"}));
 }
 
+async function updateComment(req, res, next) {
+  const {post_id, cmt_id, comment} = req.body;
+  const {id, grade} = req.session.user;
+
+
+  const data = await util.getFileContent(commentPath);
+  if(!data) console.error(data);
+
+  const target = data.filter(v => v.post_id == post_id && v.cmt_id == cmt_id);
+  if(target.writer !== id && grade !== 9) {
+    res.send({code: 401});
+    return;
+  }
+  data.map(v => {
+    if(v.post_id == post_id && v.cmt_id == cmt_id) {
+      v.content = comment;
+    }
+  });
+
+  const updatedFile = await util.writeFile(commentPath, data);
+  if(!updatedFile) console.error(updatedFile);
+  res.send({code: 200});
+
+}
 
 
 

@@ -2,7 +2,7 @@
   <div class="modal-dialog modal-lg" role="document">
     <div class="modal-content px-3 py-2">
       <div class="modal-header border-0">
-        <h5 class="modal-title">게시글</h5>
+        <h5 class="modal-title f-2">게시글</h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
@@ -41,32 +41,35 @@
               수정
             </button>
             <button type="submit" class="btn btn-secondary rounded-0 px-4 d-none" id="btnUpdate">확인</button>
-            <button type="button" class="btn btn-danger rounded-0 px-4" id="btnRemove" onclick="confirmRemovePost(this);">삭제</button>
-            <button type="button" class="btn btn-secondary rounded-0 px-4 ml-1" onclick="cancelModify(this);">취소</button>
+            <button type="button" class="btn btn-danger rounded-0 px-4" id="btnRemove" onclick="confirmRemovePost(this);">삭제
+            </button>
+            <button type="button" class="btn btn-secondary rounded-0 px-4 ml-1" id="btnCancel" onclick="cancelModify(this);" disabled>취소
+            </button>
           </div>
         </form>
 
         <div class="modal-footer border-0 p-0 text-center justify-content-center">
           <h6 class="text-left w-100 mb-2">댓글목록</h6>
-          <form action="/rest/write_comment" method="post" class="w-100" name="writeCommentForm" enctype="multipart/form-data" onsubmit="return writeComment(this);">
-            <input type="hidden" name="writer" value="<%= id %>">
-            <input type="hidden" name="post_id" id="post_id">
-            <table class="table table-bordered text-left m-0" id="detail_comment_table">
-              <thead>
-                <tr>
-                  <th width="120"><%= id %></th>
-                  <td>
-                    <input type="text" id="comment" name="content" class="form-control rounded-0" placeholder="댓글 내용을 입력하세요.">
-                    <input type="file" id="up_cmt_file" name="up_cmt_file" class="form-control-file py-2" >
-                  </td>
-                  <td width="102" class="p-0 text-center">
-                    <button type="submit" class="btn btn-sm btn-secondary rounded-0">댓글등록</button>
-                  </td>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </form>
+          <table class="table table-borderless text-left m-0" id="detail_comment_table">
+            <thead>
+            <tr>
+              <th width="150"><%= id %></th>
+              <td>
+                <form action="/rest/write_comment" method="post" class="w-100" name="writeCommentForm" enctype="multipart/form-data" onsubmit="return writeComment(this);">
+                  <input type="hidden" name="writer" value="<%= id %>">
+                  <input type="hidden" name="post_id" id="post_id">
+                  <input type="text" id="comment" name="content" class="form-control rounded-0"
+                         placeholder="댓글 내용을 입력하세요.">
+                  <input type="file" id="up_cmt_file" name="up_cmt_file" class="form-control-file py-2">
+                </form>
+              </td>
+              <td width="143" class="p-0 text-center">
+                <button type="submit" class="btn btn-sm btn-secondary rounded-0" onclick="submitCommentForm(this);">댓글등록</button>
+              </td>
+            </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
         </div>
       </div>
     </div>

@@ -15,7 +15,7 @@ ol, ul, li, dl, dt, dd {
 }
 
 a, a:link{
-  color: #0000ff;
+  color: #17a2b8;
   text-decoration: none;
 }
 
@@ -91,15 +91,63 @@ textarea {
   width: 100px;
   height: 100px;
   overflow: hidden;
+  display: block;
 }
 .cmt-img {
   width: 100px;
 }
 
-#cmt_reply_table th {
-  vertical-align: top !important;
+
+
+#detail_comment_table tr td:nth-child(3) {
+  text-align: center !important;
+}
+#detail_comment_table thead tr {
+  border-left: 1px solid #dee2e6;
+  border-right: 1px solid #dee2e6;
 }
 
-#cmt_reply_table tr {
+#detail_comment_table tr {
   border-top: 1px solid #dee2e6;
+}
+
+.indent-1 {
+  padding-left: 20px !important;
+}
+.indent-2 {
+  padding-left: 40px !important;
+}
+.indent-3 {
+  padding-left: 60px !important;
+}
+.indent-4 {
+  padding-left: 80px !important;
+}
+.indent-5 {
+  padding-left: 100px !important;
+}
+.indent-6 {
+  padding-left: 120px !important;
+}
+.indent-7 {
+  padding-left: 140px !important;
+}
+.indent-8 {
+  padding-left: 160px !important;
+}
+.indent-9 {
+  padding-left: 180px !important;
+}
+.indent-10 {
+  padding-left: 200px !important;
+}
+
+
+.recommand-box {
+  display: flex;
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+  width: 65px;
+  justify-content: space-between;
 }
