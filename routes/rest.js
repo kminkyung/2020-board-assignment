@@ -209,44 +209,44 @@ async function writeComment(req, res, next) {
     const createdFile = await util.writeFile(commentPath, comment); // content를 넣어서 파일 생성
     if (!createdFile) console.log("파일쓰기 실패");
     res.send(util.alertLocation({msg: "댓글이 등록되었습니다.", loc: "/"}));
-  } else { // 파일이 있으면
+  }
+  else { // 파일이 있으면
     const content = await util.getFileContent(commentPath);
     if (content == '') { // 파일 있음 & 내용 없음
       comment.push(info);
       const createdComment = await util.writeFile(commentPath, comment);
       if (!createdComment) console.log("파일쓰기 실패");
       res.send(util.alertLocation({msg: "댓글이 등록되었습니다.", loc: "/"}));
-    } else { // 파일 있음 & 내용 있음
+    }
+    else { // 파일 있음 & 내용 있음
       comment = await util.getFileContent(commentPath);
-      let max_idx = 0;
+
+      let non_post_comments = comment.filter(v => v.post_id !== post_id); // 같은 게시글이 아닌 경우
       let post_comments = comment.filter(v => v.post_id == post_id); // 같은 게시글의 댓글들
 
+      if(post_comments.length !== 0) {
+        info.cmt_id = post_comments.sort((a, b) => b.cmt_id - a.cmt_id)[0].cmt_id + 1;
+      }
+
       post_comments.map(v => {
-        if (parseInt(v.cmt_id) > max_idx) { // cmt_id 구하기
-          max_idx = parseInt(v.cmt_id);
-        }
         if (info.parent_id == 0) { // 부모댓글 없는 경우
           info.step = v.step + 1;
-        } else if (v.cmt_id == info.parent_id) { // 부모댓글 있는 경우
+        }
+        else if (v.cmt_id == info.parent_id) { // 부모댓글 있는 경우
           info.indent = v.indent + 1;
           info.step = v.step + 1;
-        } else {
-          v.step++;
+        }
+        // else if (v.parent_id == info.parent_id) { // 만약 나중에 쓴 대댓글이 밑으로 오게 하고 싶다면
+        //   info.indent = v.indent;
+        //   info.step = v.step + 1;
+        // }
+        else if(v.step >= info.step) {
+           v.step++;
         }
       });
 
-      for (let i = 0; i < post_comments.length; i++) {
-        let target_index = comment.findIndex((v, i) => v.post_id == post_comments[0].post_id);
-        if (target_index < 0) break;
-        comment.splice(target_index, 1);
-      }
-      info.cmt_id = max_idx + 1;
-
-
       post_comments.push(info);
-      for (let i = 0; i < post_comments.length; i++) {
-        comment.push(post_comments[i]);
-      }
+      comment = [...non_post_comments, ...post_comments];
 
       const createdComment = await util.writeFile(commentPath, comment);
       if (!createdComment) console.log("파일쓰기 실패");
