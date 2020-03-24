@@ -186,8 +186,8 @@ async function writeComment(req, res, next) {
   console.log(req.body);
   let comment = [];
   const info = {};
-  info.post_id = post_id;
-  info.parent_id = parent_id == undefined ? 0 : parent_id;
+  info.post_id = parseInt(post_id);
+  info.parent_id = parent_id == undefined ? 0 : parseInt(parent_id);
   info.cmt_id = 1;
   info.writer = req.session.user.id;
   info.content = content;
@@ -211,6 +211,7 @@ async function writeComment(req, res, next) {
     const createdFile = await util.writeFile(commentPath, comment); // content를 넣어서 파일 생성
     if (!createdFile) console.log("파일쓰기 실패");
     res.send(util.alertLocation({msg: "댓글이 등록되었습니다.", loc: "/"}));
+    return;
   }
   else { // 파일이 있으면
     const content = await util.getFileContent(commentPath);
@@ -219,37 +220,37 @@ async function writeComment(req, res, next) {
       const createdComment = await util.writeFile(commentPath, comment);
       if (!createdComment) console.log("파일쓰기 실패");
       res.send(util.alertLocation({msg: "댓글이 등록되었습니다.", loc: "/"}));
+      return;
     }
     else { // 파일 있음 & 내용 있음
       comment = await util.getFileContent(commentPath);
 
-      let non_post_comments = comment.filter(v => v.post_id !== post_id); // 같은 게시글이 아닌 경우
-      let post_comments = comment.filter(v => v.post_id == post_id); // 같은 게시글의 댓글들
+      let non_post_comments = comment.filter(v => v.post_id !== info.post_id); // 같은 게시글이 아닌 경우
+      let post_comments = comment.filter(v => v.post_id == info.post_id); // 같은 게시글의 댓글들
 
       if(post_comments.length !== 0) {
         info.cmt_id = post_comments.sort((a, b) => b.cmt_id - a.cmt_id)[0].cmt_id + 1;
       }
 
       post_comments.map(v => {
-        if (info.parent_id == 0) { // 부모댓글 없는 경우
+        if (v.parent_id == info.parent_id && v.step >= info.step) {
+          console.log("info랑 부모가 같은 애들", v.cmt_id);
+          info.indent = v.indent;
           info.step = v.step + 1;
+          console.log("info.step", info.step);
         }
-        else if (v.cmt_id == info.parent_id) { // 부모댓글 있는 경우
+        if (v.cmt_id == info.parent_id) { // 부모댓글 있는 경우
           info.indent = v.indent + 1;
           info.step = v.step + 1;
         }
-        // else if (v.parent_id == info.parent_id) { // 만약 나중에 쓴 대댓글이 밑으로 오게 하고 싶다면
-        //   info.indent = v.indent;
-        //   info.step = v.step + 1;
-        // }
-        else if(v.step >= info.step) {
+        if(v.step >= info.step) {
+          console.log("info보다 step 작은 애들 +1", v.cmt_id);
            v.step++;
         }
       });
 
       post_comments.push(info);
       comment = [...non_post_comments, ...post_comments];
-
       const createdComment = await util.writeFile(commentPath, comment);
       if (!createdComment) console.log("파일쓰기 실패");
       res.send(util.alertLocation({msg: "댓글이 등록되었습니다.", loc: "/"}));
