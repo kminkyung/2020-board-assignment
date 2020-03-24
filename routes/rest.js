@@ -182,6 +182,8 @@ async function writeBoard(req, res, next) {
 
 async function writeComment(req, res, next) {
   const {post_id, parent_id, content} = req.body;
+  console.log(req.file);
+  console.log(req.body);
   let comment = [];
   const info = {};
   info.post_id = post_id;
