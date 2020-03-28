@@ -56,9 +56,11 @@
     "step": 1,
     "indent": 0,
     "removed": false,
-    "recommended": 0,
+    "recommended": 1,
     "not_recommended": 0,
-    "voted_id": [],
+    "voted_id": [
+      "administrator"
+    ],
     "date": "2020년 3월 24일",
     "orifile": "",
     "savefile": ""
@@ -76,6 +78,56 @@
     "not_recommended": 0,
     "voted_id": [],
     "date": "2020년 3월 24일",
+    "orifile": "",
+    "savefile": ""
+  },
+  {
+    "post_id": 3,
+    "parent_id": 0,
+    "cmt_id": 1,
+    "writer": "abcdefg11",
+    "content": "1",
+    "step": 1,
+    "indent": 0,
+    "removed": false,
+    "recommended": 0,
+    "not_recommended": 1,
+    "voted_id": [
+      "abcdefg11"
+    ],
+    "date": "2020년 3월 28일",
+    "orifile": "",
+    "savefile": ""
+  },
+  {
+    "post_id": 2,
+    "parent_id": 0,
+    "cmt_id": 1,
+    "writer": "abcdefg11",
+    "content": "1",
+    "step": 1,
+    "indent": 0,
+    "removed": false,
+    "recommended": 0,
+    "not_recommended": 0,
+    "voted_id": [],
+    "date": "2020년 3월 28일",
+    "orifile": "",
+    "savefile": ""
+  },
+  {
+    "post_id": 2,
+    "parent_id": 0,
+    "cmt_id": 2,
+    "writer": "abcdefg11",
+    "content": "2",
+    "step": 2,
+    "indent": 0,
+    "removed": true,
+    "recommended": 0,
+    "not_recommended": 0,
+    "voted_id": [],
+    "date": "2020년 3월 28일",
     "orifile": "",
     "savefile": ""
   }

@@ -8,6 +8,10 @@
         </button>
       </div>
       <div class="modal-body p-4">
+        <ul class="justify-content-end d-flex mb-3">
+          <li class="mr-3 text-info pointer" onclick="recommendPost(this);"><span>👍🏻</span>추천 (<span id="recommend_count"></span>)</li>
+          <li class="text-danger pointer" onclick="decommendPost(this);"><span>👎🏻</span>비추천 (<span id="decommend_count"></span>)</li>
+        </ul>
         <form action="/rest/update_board" method="post" name="updateForm" autocomplete="off" onsubmit="return submitUpdatePost(this);">
           <table class="table table-bordered text-left" id="detail_table">
             <input type="hidden" name="id" id="id">

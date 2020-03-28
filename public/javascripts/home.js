@@ -2,7 +2,6 @@
 const size_limit = 1024 * 1024 * 10;
 
 
-
 /* event */
 $("#board_detail_modal").on("hide.bs.modal", function () {
   $("#btnUpdate").addClass("d-none");
@@ -86,7 +85,7 @@ async function drawBoard(page) {
   console.log(data);
   // $("#board_list_table tbody").empty();
   if (data.list.length == 0) {
-    $("#board_list_table tbody").append(`<tr><td colspan="6">게시글이 없습니다.</td></tr>`);
+    $("#board_list_table tbody").append(`<tr><td colspan="9">게시글이 없습니다.</td></tr>`);
   } else {
     const tbody_code = data.list.map(v => `<tr class="pointer" onclick="showDetailModal(this);">
                                             <td data-idx="${v.idx}">${v.idx}</td>
@@ -95,6 +94,8 @@ async function drawBoard(page) {
                                             <td>${v.content}</td>
                                             <td>${v.savefile !== '' ? '💾' : v.savefile}</td>
                                             <td>${v.date}</td>
+                                            <td>${v.score}</td>
+                                            <td>${v.view}</td>
                                             <td>
                                               ${grade == 9 ? remove_btn_code : id == v.id ? remove_btn_code : ''}
                                             </td>
@@ -110,12 +111,11 @@ async function drawBoard(page) {
 }
 
 
-
 function showBoard(page) {
   $("#board_list_container").remove();
   $("#btnHideBoard").removeClass("d-none");
   $("#btnShowBoard").addClass("d-none");
-   const code = `<div class="container border shadow-box mx-auto my-5 p-5 pb-0" id="board_list_container">
+  const code = `<div class="container border shadow-box mx-auto my-5 p-5 pb-0" id="board_list_container">
                   <div class="d-flex justify-content-between align-items-start">
                     <h4 class="mb-4">게시판</h4>
                     <button type="button" class="btn btn-secondary rounded-0" onclick="showWriteModal();">글쓰기</button>
@@ -130,6 +130,8 @@ function showBoard(page) {
                       <th>내용</th>
                       <th width="50">파일</th>
                       <th>작성일</th>
+                      <th width="60">인기도</th>
+                      <th width="60">조회수</th>
                       <th width="70">관리</th>
                     </tr>
                     </thead>
@@ -137,10 +139,9 @@ function showBoard(page) {
                     </tbody>
                   </table>
               </div>`;
-    $("body").append(code);
-    drawBoard(page);
+  $("body").append(code);
+  drawBoard(page);
 }
-
 
 
 function modifyPost(btn) {
@@ -207,19 +208,21 @@ function showWriteModal() {
 function cancelModify(t) {
   const idx = $(t).parents("#board_detail_modal").find("input[name='idx']").val();
   const modal = $(t).parents("#board_detail_modal");
- $("#btnUpdate").addClass("d-none");
- $("#btnModify").removeClass("d-none");
- $("#btnCancel").prop("disabled", true);
+  $("#btnUpdate").addClass("d-none");
+  $("#btnModify").removeClass("d-none");
+  $("#btnCancel").prop("disabled", true);
 
   $("input[name='title']").remove();
   $("textarea[name='content']").remove();
   getBoardPost(idx, function (data) {
-    console.log(data);
     modal.find("#title").text(data.title);
     modal.find("#content").text(data.content);
   });
 }
 
+$("#board_detail_modal").on("hide.bs.modal", function(e) {
+  showBoard(0);
+});
 
 function showDetailModal(tr) {
   const idx = $(tr).children("td:first-child").data("idx");
@@ -232,6 +235,9 @@ function showDetailModal(tr) {
     modal.find("#date").text(data.date);
     modal.find("#title").text(data.title);
     modal.find("#content").text(data.content);
+    modal.find("#recommend_count").text(data.recommended);
+    modal.find("#decommend_count").text(data.decommended);
+
     if (data.orifile !== "") {
       data.orifile = data.orifile.split(" ");
       data.savefile = data.savefile.split(" ");
@@ -249,19 +255,19 @@ function showDetailModal(tr) {
   });
 
   $("#detail_comment_table > tbody").empty();
-    getBoardComment(idx, (data) => {
-      const code = data.map(v => `<tr data-idx="${v.cmt_id}">
+  getBoardComment(idx, (data) => {
+    const code = data.map(v => `<tr data-idx="${v.cmt_id}">
                                   <th class="indent-${v.indent}">
                                     <div>${v.writer}</div>
                                     <div class="text-secondary f-075 mt-1">${v.date}</div>
                                   </th>
                                   <td class="indent-${v.indent} position-relative">
-                                    <p>${ !v.removed ? v.content : `<span class="f-0875 font-italic text-secondary">댓글이 삭제되었습니다.</span>`}
+                                    <p>${!v.removed ? v.content : `<span class="f-0875 font-italic text-secondary">댓글이 삭제되었습니다.</span>`}
                                    </p>
                                    ${v.savefile !== '' ? `<a href="/upload/${v.savefile}" class="img-container"><img src="/upload/${v.savefile}" alt="" class="cmt-img"></a>` : ''}
-                                   <ul class="recommand-box">
+                                   <ul class="recommend-box">
                                     <li class="pointer" onclick="recommendComment(this);">👍🏻<span class="f-0875 text-info">${v.recommended}</span></li>
-                                    <li class="pointer" onclick="decommendComment(this);">👎🏻<span class="f-0875 text-secondary">${v.not_recommended}</span></li>
+                                    <li class="pointer" onclick="decommendComment(this);">👎🏻<span class="f-0875 text-danger">${v.not_recommended}</span></li>
                                    </ul>
                                   </td>
                                   <td>
@@ -273,15 +279,32 @@ function showDetailModal(tr) {
     $("#detail_comment_table > tbody").prepend(code);
   });
 
+  countViews(idx);
   $("#board_detail_modal").modal("show");
 }
+
+function countViews(post_id) {
+  $.ajax({
+    type: 'post',
+    url: `rest/count_views/${post_id}`,
+    error: function (err) {
+      console.log(err);
+    },
+    success: function (res) {
+      if (res.code == 200) {
+        console.log("successfully counted views");
+      }
+    }
+  })
+}
+
 
 function updateComment(t) {
   const comment = $(t).parent().prev("td").children("input[name='modify_cmt_input']").val();
   const post_id = $(t).parents("#board_detail_modal").find("input[name='idx']").val();
   const cmt_id = $(t).parents("tr").data("idx");
 
-  if(comment.trim() == '') {
+  if (comment.trim() == '') {
     alert("댓글 내용을 입력해주세요.");
     $("input[name='modify_cmt_input']").focus();
     return;
@@ -295,19 +318,17 @@ function updateComment(t) {
       console.log(err);
     },
     success: function (res) {
-      console.log(res);
-      if(res.code == 401) {
+      if (res.code == 401) {
         alert("권한이 없습니다.");
         return;
       }
-      if(res.code == 200) {
+      if (res.code == 200) {
         alert("댓글 수정이 완료되었습니다.");
         location.href = '/';
       }
     }
   });
 }
-
 
 
 function modifyComment(t) {
@@ -334,27 +355,45 @@ function cancelModifyComment(t) {
   $("input[name='modify_cmt_input']").remove();
 }
 
-
-function recommendComment(t) {
-  if(!confirm("이 댓글을 추천하시겠습니까?")) {
+function recommendPost(t) {
+  if (!confirm("이 게시글을 추천하시겠습니까?")) {
     return;
   }
-  else {
+  const post_id = $(t).parents("#board_detail_modal").find("input[name='idx']").val();
+  $.ajax({
+    type: 'get',
+    url: `/rest/recommend_post/${post_id}`,
+    error: function (err) {
+      console.log(err);
+    },
+    success: function (res) {
+      if (res.code == 400) {
+        alert("게시글 당 추천 또는 비추천은 한번만 할 수 있습니다.");
+      } else if (res.code == 200) {
+        alert("게시글을 추천했습니다.");
+        location.href = '/';
+      }
+    }
+  });
+}
+
+function decommendPost(t) {
+  if (!confirm("이 게시글을 비추천하시겠습니까?")) {
+    return;
+  } else {
     const post_id = $(t).parents("#board_detail_modal").find("input[name='idx']").val();
-    const cmt_id = $(t).parents("tr").data("idx");
 
     $.ajax({
       type: 'get',
-      url: `/rest/recommend_comment/${post_id}/${cmt_id}`,
+      url: `/rest/decommend_post/${post_id}`,
       error: function (err) {
         console.log(err);
       },
       success: function (res) {
-        if(res.code == 400) {
-          alert("댓글당 추천 또는 비추천은 한번만 할 수 있습니다.");
-        }
-        else if(res.code == 200) {
-          alert("댓글을 추천했습니다.");
+        if (res.code == 400) {
+          alert("게시글당 추천 또는 비추천은 한번만 할 수 있습니다.");
+        } else if (res.code == 200) {
+          alert("게시글을 비추천했습니다.");
           location.href = '/';
         }
       }
@@ -362,11 +401,36 @@ function recommendComment(t) {
   }
 }
 
-function decommendComment(t) {
-  if(!confirm("이 댓글을 비추천하시겠습니까?")) {
+
+
+function recommendComment(t) {
+  if (!confirm("이 댓글을 추천하시겠습니까?")) {
     return;
   }
-  else {
+  const post_id = $(t).parents("#board_detail_modal").find("input[name='idx']").val();
+  const cmt_id = $(t).parents("tr").data("idx");
+
+  $.ajax({
+    type: 'get',
+    url: `/rest/recommend_comment/${post_id}/${cmt_id}`,
+    error: function (err) {
+      console.log(err);
+    },
+    success: function (res) {
+      if (res.code == 400) {
+        alert("댓글당 추천 또는 비추천은 한번만 할 수 있습니다.");
+      } else if (res.code == 200) {
+        alert("댓글을 추천했습니다.");
+        location.href = '/';
+      }
+    }
+  });
+}
+
+function decommendComment(t) {
+  if (!confirm("이 댓글을 비추천하시겠습니까?")) {
+    return;
+  } else {
     const post_id = $(t).parents("#board_detail_modal").find("input[name='idx']").val();
     const cmt_id = $(t).parents("tr").data("idx");
 
@@ -377,25 +441,21 @@ function decommendComment(t) {
         console.log(err);
       },
       success: function (res) {
-        if(res.code == 400) {
+        if (res.code == 400) {
           alert("댓글당 추천 또는 비추천은 한번만 할 수 있습니다.");
-        }
-        else if(res.code == 200) {
-         alert("댓글을 비추천했습니다.");
+        } else if (res.code == 200) {
+          alert("댓글을 비추천했습니다.");
           location.href = '/';
         }
       }
     });
   }
-
-
 }
 
 function removeComment(t) {
-  if(!confirm("정말로 댓글을 삭제하시겠습니까?")) {
+  if (!confirm("정말로 댓글을 삭제하시겠습니까?")) {
     return;
-  }
-  else {
+  } else {
     const post_id = $(t).parents("#board_detail_modal").find("input[name='idx']").val();
     const cmt_id = $(t).parents("tr").data("idx");
     $.ajax({
@@ -405,11 +465,10 @@ function removeComment(t) {
         console.log(err);
       },
       success: function (res) {
-        if(res.code == 401) {
+        if (res.code == 401) {
           alert("댓글 삭제 권한이 없습니다.");
           location.href = '/';
-        }
-        else if(res.code == 200) {
+        } else if (res.code == 200) {
           alert("댓글이 삭제되었습니다.");
           location.href = '/';
         }
@@ -454,22 +513,28 @@ function submitCommentForm(t) {
 }
 
 function submitBoardForm() {
-  const title = $("#write_table").find("input[name='title']").val();
-  const content = $("#write_table").find("textarea[name='content']").val();
-  const file_size = $("#write_table").find("input[name='upfile']")[0].files[0].size;
+  console.log("아아아아아ㅏ아아아악아악");
+  // event.preventDefault();
+  const title = $("#write_table").find("input[name='title']").val().trim();
+  const content = $("#write_table").find("textarea[name='content']").val().trim();
+  const file = $("#write_table").find("input[name='upfile']")[0].files[0];
 
-  if(file_size > size_limit) {
-    alert("첨부파일은 10MB를 넘을 수 없습니다.");
-  }
-  if (title.trim() == '') {
+  if (title == '') {
+    console.log(">>>>>>>");
     alert("제목을 입력해주세요.");
     return false;
   }
-  if (content.trim() == '') {
+  if (content == '') {
+    console.log("????????");
     alert("내용을 입력해주세요.");
     return false;
   }
-  return true;
+  if (file.size > size_limit) {
+    alert("첨부파일은 10MB를 넘을 수 없습니다.");
+    return false;
+  }
+
+  return false;
 }
 
 
@@ -504,7 +569,6 @@ function writeComment(form) {
 }
 
 
-
 function getBoardList(page, callback) {
   return new Promise((resolve, reject) => {
     $.ajax({
@@ -525,7 +589,7 @@ function getBoardPost(idx, callback) {
     type: 'get',
     url: `/rest/get_board_post/${idx}`,
     error: function (err) {
-        console.log(err);
+      console.log(err);
     },
     success: function (res) {
       callback(res);

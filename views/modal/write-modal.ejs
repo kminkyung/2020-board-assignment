@@ -8,7 +8,7 @@
         </button>
       </div>
       <div class="modal-body p-4">
-        <form action="/rest/write_board" method="post" name="writeForm" autocomplete="off" onsubmit="return submitBoardForm();" enctype="multipart/form-data">
+        <form action="/rest/write_board" method="post" name="writeForm" autocomplete="off" enctype="multipart/form-data" onsubmit="return submitBoardForm()" >
           <table class="table table-bordered text-center" id="write_table">
             <tbody>
             <tr>
@@ -17,9 +17,11 @@
                 <input type="hidden" name="id" value="<%= id %>">
               </td>
             </tr>
-            <tr class="p-3">
+            <tr>
               <td>제목</td>
-              <td><input type="text" name="title" id="title" class="form-control rounded-0"></td>
+              <td class="p-3">
+                <input type="text" name="title" id="title" class="form-control rounded-0">
+              </td>
             </tr>
             <tr>
               <td>내용</td>
