@@ -79,6 +79,7 @@ function hideBoard() {
 
 
 async function drawBoard(page) {
+  $("#board_list_table tbody").empty();
   const remove_btn_code = `<button type="button" class="btn btn-secondary btn-sm rounded-0" id="btnRemove" onclick="confirmRemovePost(this);">삭제</button>`;
   const showmore_btn_code = `<div class="text-center"><button type="button" class="btn btn-secondary rounded-0" id="btnShowMore" onclick="drawBoard(${page + 1})">더 보기</button></div>`;
   const data = await getBoardList(page);
@@ -117,8 +118,21 @@ function showBoard(page) {
   const code = `<div class="container border shadow-box mx-auto my-5 p-5 pb-0" id="board_list_container">
                   <div class="d-flex justify-content-between align-items-start">
                     <h4 class="mb-4">게시판</h4>
-                    <button type="button" class="btn btn-secondary rounded-0" onclick="showWriteModal();">글쓰기</button>
                   </div>
+                  
+                  <ul class="d-flex justify-content-between mb-3">
+                  <li class="d-flex align-items-center">
+                    <span class="flex-shrink-0 mr-2">정렬 : </span>
+                    <select class="form-control flex-shrink-0" id="sort">
+                      <option value="by_date">업로드 일시</option>
+                      <option value="by_score">인기도</option>
+                    </select>
+                    </li>
+                    <li>
+                      <button type="button" class="btn btn-secondary rounded-0" onclick="showWriteModal();">글쓰기</button>
+                    </li>
+                                   
+                  </ul>
             
                   <table class="table table-bordered text-center table-ellipsis" id="board_list_table">
                     <thead>
@@ -140,7 +154,14 @@ function showBoard(page) {
               </div>`;
   $("body").append(code);
   drawBoard(page);
+
+
+  $("#sort").change(function () {
+    // const criteria = $(this).val();
+    drawBoard(page);
+  });
 }
+
 
 
 function modifyPost(btn) {
@@ -679,8 +700,6 @@ function writeComment(form) {
   formData.append('content', content);
   formData.append('up_cmt_file', $("#up_cmt_file")[0].files[0]);
 
-  console.log("formData", formData);
-
   $.ajax({
     method: 'post',
     url: 'rest/write_comment',
@@ -704,11 +723,24 @@ function writeComment(form) {
 }
 
 
+function getSortQuery() {
+  const criteria = $("#sort").val();
+  let query_str = '';
+  if(criteria == "by_date") {
+    query_str = '?sort=date';
+  }
+  else if(criteria == "by_score") {
+    query_str = '?sort=score';
+  }
+  console.log(query_str);
+  return query_str;
+}
+
 function getBoardList(page, callback) {
   return new Promise((resolve, reject) => {
     $.ajax({
       type: 'get',
-      url: `/rest/get_board_list/${page}`,
+      url: `/rest/get_board_list/${page}${getSortQuery()}`,
       error: function (err) {
         reject(err);
       },

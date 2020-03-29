@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const mt = require('../module/upload');
 const util = require('../module/util');
+const url = require('url');
 
 const memberFile = 'member.json';
 const memberPath = path.join(__dirname, '..', memberFile);
@@ -144,21 +145,6 @@ const divideFile = async (size, path, name, oriname) => {
   });
 };
 
-const calculatePostScore = () => {
-  const view_point = 1;
-  const post_recommend_point = 3;
-  const post_decommend_point = -1;
-
-}
-
-const calculateCommentScore = () => {
-  const cmt_point = 2;
-  const cmt_img_point = 3;
-  const cmt_recommend_point = 3;
-  const cmt_decommend_point = -1;
-
-
-}
 
 async function writeBoard(req, res, next) {
   const {title, content} = req.body;
@@ -217,7 +203,7 @@ async function countViews(req, res, next) {
   const posts = await util.getFileContent(boardPath);
   const target_post = posts.find(v => v.idx == post_id);
 
-  if(target_post.id !== user_id && target_post.viewer.indexOf(user_id) === -1) {
+  if (target_post.id !== user_id && target_post.viewer.indexOf(user_id) === -1) {
     target_post.view += 1;
     target_post.viewer.push(user_id);
   } else {
@@ -230,7 +216,7 @@ async function countViews(req, res, next) {
   posts.push(target_post);
 
   const updatedFile = await util.writeFile(boardPath, posts);
-  if(!updatedFile) console.error(updatedFile);
+  if (!updatedFile) console.error(updatedFile);
   res.send({code: 200});
 }
 
@@ -249,6 +235,7 @@ async function writeComment(req, res, next) {
   info.removed = false;
   info.recommended = [];
   info.decommended = [];
+  info.score = 0;
   info.date = util.convertDate(new Date(), 4);
   info.orifile = req.file ? req.file.originalname : '';
   info.savefile = req.file ? req.file.filename : '';
@@ -264,22 +251,20 @@ async function writeComment(req, res, next) {
     const createdFile = await util.writeFile(commentPath, comment); // content를 넣어서 파일 생성
     if (!createdFile) console.log("파일쓰기 실패");
     res.send({code: 200});
-  }
-  else { // 파일이 있으면
+  } else { // 파일이 있으면
     const content = await util.getFileContent(commentPath);
     if (content == '') { // 파일 있음 & 내용 없음
       comment.push(info);
       const createdComment = await util.writeFile(commentPath, comment);
       if (!createdComment) console.log("파일쓰기 실패");
       res.send({code: 200});
-    }
-    else { // 파일 있음 & 내용 있음
+    } else { // 파일 있음 & 내용 있음
       comment = await util.getFileContent(commentPath);
 
       let non_post_comments = comment.filter(v => v.post_id !== info.post_id); // 같은 게시글이 아닌 경우
       let post_comments = comment.filter(v => v.post_id == info.post_id); // 같은 게시글의 댓글들
 
-      if(post_comments.length !== 0) {
+      if (post_comments.length !== 0) {
         info.cmt_id = post_comments.sort((a, b) => b.cmt_id - a.cmt_id)[0].cmt_id + 1;
       }
 
@@ -294,9 +279,9 @@ async function writeComment(req, res, next) {
           info.indent = v.indent + 1;
           info.step = v.step + 1;
         }
-        if(v.step >= info.step) {
+        if (v.step >= info.step) {
           console.log("info보다 step 작은 애들 +1", v.cmt_id);
-           v.step++;
+          v.step++;
         }
       });
 
@@ -317,10 +302,10 @@ async function hasVotedPost(req, res, next) {
   const user_id = req.session.user.id;
 
   const data = await util.getFileContent(boardPath);
-  if(!data) console.error(data);
+  if (!data) console.error(data);
 
   const target_post = data.find(v => v.idx == post_id);
-  if(target_post.recommended.indexOf(user_id) >= 0 || target_post.decommended.indexOf(user_id) >= 0) {
+  if (target_post.recommended.indexOf(user_id) >= 0 || target_post.decommended.indexOf(user_id) >= 0) {
     res.send(true);
   } else {
     res.send(false);
@@ -333,10 +318,10 @@ async function hasVotedComment(req, res, next) {
   const user_id = req.session.user.id;
 
   const data = await util.getFileContent(commentPath);
-  if(!data) console.error(data);
+  if (!data) console.error(data);
 
   const target_cmt = data.filter(v => v.post_id == post_id).find(v => v.cmt_id == cmt_id);
-  if(target_cmt.recommended.indexOf(user_id) >= 0 || target_cmt.decommended.indexOf(user_id) >= 0) {
+  if (target_cmt.recommended.indexOf(user_id) >= 0 || target_cmt.decommended.indexOf(user_id) >= 0) {
     res.send(true);
   } else {
     res.send(false);
@@ -348,19 +333,19 @@ async function recommendPost(req, res, next) {
   const user_id = req.session.user.id;
 
   const data = await util.getFileContent(boardPath);
-  if(!data) console.error(data);
+  if (!data) console.error(data);
 
   const target_post = data.find(v => v.idx == post_id);
-  if(target_post.recommended.indexOf(user_id) !== -1) {
+  if (target_post.recommended.indexOf(user_id) !== -1) {
     res.send({code: 400});
   } else {
     data.map(v => {
-      if(v.idx == post_id) {
+      if (v.idx == post_id) {
         v.recommended.push(user_id);
       }
     });
     const updatedFile = await util.writeFile(boardPath, data);
-    if(!updatedFile) console.error(updatedFile);
+    if (!updatedFile) console.error(updatedFile);
     res.send({code: 200});
   }
 }
@@ -370,19 +355,19 @@ async function decommendPost(req, res, next) {
   const user_id = req.session.user.id;
 
   const data = await util.getFileContent(boardPath);
-  if(!data) console.error(data);
+  if (!data) console.error(data);
 
   const target_post = data.find(v => v.idx == post_id);
-  if(target_post.decommended.indexOf(user_id) !== -1) {
+  if (target_post.decommended.indexOf(user_id) !== -1) {
     res.send({code: 400});
   } else {
     data.map(v => {
-      if(v.idx == post_id) {
+      if (v.idx == post_id) {
         v.decommended.push(user_id);
       }
     });
     const updatedFile = await util.writeFile(boardPath, data);
-    if(!updatedFile) console.error(updatedFile);
+    if (!updatedFile) console.error(updatedFile);
     res.send({code: 200});
   }
 }
@@ -392,17 +377,17 @@ async function cancelRecommendPost(req, res, next) {
   const user_id = req.session.user.id;
   const data = await util.getFileContent(boardPath);
   const target_post = data.find(v => v.idx == post_id);
-  if(target_post.recommended.indexOf(user_id) == -1) {
+  if (target_post.recommended.indexOf(user_id) == -1) {
     res.send({code: 400});
     return;
   }
   data.map(v => {
-    if(v.idx == post_id) {
+    if (v.idx == post_id) {
       v.recommended.splice(v.recommended.indexOf(user_id), 1);
     }
   });
   const updatedFile = await util.writeFile(boardPath, data);
-  if(!updatedFile) console.error(updatedFile);
+  if (!updatedFile) console.error(updatedFile);
   res.send({code: 200});
 }
 
@@ -411,17 +396,17 @@ async function cancelRecommendComment(req, res, next) {
   const user_id = req.session.user.id;
   const data = await util.getFileContent(commentPath);
   const target_cmt = data.filter(v => v.post_id == post_id && v.cmt_id == cmt_id);
-  if(target_cmt[0].recommended.indexOf(user_id) == -1) {
+  if (target_cmt[0].recommended.indexOf(user_id) == -1) {
     res.send({code: 400});
     return;
   }
   data.map(v => {
-    if(v.post_id == post_id && v.cmt_id == cmt_id) {
+    if (v.post_id == post_id && v.cmt_id == cmt_id) {
       v.recommended.splice(v.recommended.indexOf(user_id), 1);
     }
   });
   const updatedFile = await util.writeFile(commentPath, data);
-  if(!updatedFile) console.error(updatedFile);
+  if (!updatedFile) console.error(updatedFile);
   res.send({code: 200});
 }
 
@@ -430,17 +415,17 @@ async function cancelDecommendPost(req, res, next) {
   const user_id = req.session.user.id;
   const data = await util.getFileContent(boardPath);
   const target_post = data.find(v => v.idx == post_id);
-  if(target_post.decommended.indexOf(user_id) == -1) {
+  if (target_post.decommended.indexOf(user_id) == -1) {
     res.send({code: 400});
     return;
   }
   data.map(v => {
-    if(v.idx == post_id) {
+    if (v.idx == post_id) {
       v.decommended.splice(v.decommended.indexOf(user_id), 1);
     }
   });
   const updatedFile = await util.writeFile(boardPath, data);
-  if(!updatedFile) console.error(updatedFile);
+  if (!updatedFile) console.error(updatedFile);
   res.send({code: 200});
 }
 
@@ -449,17 +434,17 @@ async function cancelDecommendComment(req, res, next) {
   const user_id = req.session.user.id;
   const data = await util.getFileContent(commentPath);
   const target_cmt = data.filter(v => v.post_id == post_id && v.cmt_id == cmt_id);
-  if(target_cmt[0].decommended.indexOf(user_id) == -1) {
+  if (target_cmt[0].decommended.indexOf(user_id) == -1) {
     res.send({code: 400});
     return;
   }
   data.map(v => {
-    if(v.post_id == post_id && v.cmt_id == cmt_id) {
+    if (v.post_id == post_id && v.cmt_id == cmt_id) {
       v.decommended.splice(v.decommended.indexOf(user_id), 1);
     }
   });
   const updatedFile = await util.writeFile(commentPath, data);
-  if(!updatedFile) console.error(updatedFile);
+  if (!updatedFile) console.error(updatedFile);
   res.send({code: 200});
 }
 
@@ -532,8 +517,10 @@ async function getBoardComment(req, res, next) {
   res.json(comments);
 }
 
-
 async function getBoardList(req, res, next) {
+  const params = url.parse(req.url, true).query;
+  console.log(params);
+  // pagination
   const page = parseInt(req.params.page);
   const list_count = 10;
   const result = {};
@@ -551,27 +538,68 @@ async function getBoardList(req, res, next) {
   start_index = end_index - list_count;
   page_count = Math.ceil(total / list_count);
 
+
+  // 댓글 갯수 구해주는 부분
   let comments = await util.getFileContent(commentPath);
   if (!comments) console.error(comments);
 
   for (let i = 0; i < data.length; i++) {
     data[i].cmt_count = 0;
     for (let j = 0; j < comments.length; j++) {
+      data[i].score += await calculatePostScore(data[i]);
       if (data[i].idx == comments[j].post_id) {
-        if(comments[j].removed !== true) {
+        if (comments[j].removed !== true) {
           data[i].cmt_count++;
+          data[i].score += await calculateCommentScore(comments[j]);
         }
       }
     }
   }
 
+
   if (page + 1 < page_count) is_next = true;
-  const list = data.slice(Math.sign(start_index) === -1 ? 0 : start_index, end_index).sort((a, b) => b.idx - a.idx);
+
+  if(params.sort == 'date') {
+    list = data.slice(Math.sign(start_index) === -1 ? 0 : start_index, end_index).sort((a, b) => b.idx - a.idx);
+  } else if(params.sort == 'score') {
+    list = data.slice(Math.sign(start_index) === -1 ? 0 : start_index, end_index).sort((a, b) => b.score - a.score);
+  } else {
+    list = data.slice(Math.sign(start_index) === -1 ? 0 : start_index, end_index).sort((a, b) => b.idx - a.idx);
+  }
 
   result.list = list;
   result.is_next = is_next;
 
   res.json(result);
+}
+
+async function calculatePostScore(obj) {
+  const view_point = 1;
+  const recommend_point = 3;
+  const decommend_point = -1;
+  let score = 0;
+
+  score += obj.view * view_point;
+  score += obj.recommended.length * recommend_point;
+  score += obj.decommended.length * decommend_point;
+  return score;
+}
+
+async function calculateCommentScore(obj) {
+  const cmt_point = 2;
+  const cmt_img_point = 3;
+  const recommend_point = 3;
+  const decommend_point = -1;
+  let score = 0;
+
+  if (obj.orifile !== "" && removed == false) {
+    score += cmt_img_point;
+  } else if (obj.removed == false) {
+    score += cmt_point;
+  }
+  score += obj.recommended.length * recommend_point;
+  score += obj.decommended.length * decommend_point;
+  return score;
 }
 
 
@@ -598,6 +626,14 @@ async function removeBoardPost(req, res, next) {
   data.splice(removeIndex, 1);
   let result = await util.writeFile(boardPath, data);
   if (!result) console.error(result);
+
+  const comments = await util.getFileContent(commentPath);
+  if (!comments) console.error(comments);
+  const notRevTargets = comments.filter(v.post_id !== idx);
+
+  const updatedComment = await util.writeFile(comments, notRevTargets);
+  if (!updatedComment) console.error(updatedComment);
+
   res.send({code: 200});
 }
 
@@ -648,25 +684,24 @@ async function updateComment(req, res, next) {
 
 
   const data = await util.getFileContent(commentPath);
-  if(!data) console.error(data);
+  if (!data) console.error(data);
 
   const target = data.filter(v => v.post_id == post_id && v.cmt_id == cmt_id);
-  if(target.writer !== id && grade !== 9) {
+  if (target.writer !== id && grade !== 9) {
     res.send({code: 401});
     return;
   }
   data.map(v => {
-    if(v.post_id == post_id && v.cmt_id == cmt_id) {
+    if (v.post_id == post_id && v.cmt_id == cmt_id) {
       v.content = comment;
     }
   });
 
   const updatedFile = await util.writeFile(commentPath, data);
-  if(!updatedFile) console.error(updatedFile);
+  if (!updatedFile) console.error(updatedFile);
   res.send({code: 200});
 
 }
-
 
 
 module.exports = router;
