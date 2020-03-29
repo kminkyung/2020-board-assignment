@@ -8,9 +8,7 @@
         </button>
       </div>
       <div class="modal-body p-4">
-        <ul class="justify-content-end d-flex mb-3">
-          <li class="mr-3 text-info pointer" onclick="recommendPost(this);"><span>👍🏻</span>추천 (<span id="recommend_count"></span>)</li>
-          <li class="text-danger pointer" onclick="decommendPost(this);"><span>👎🏻</span>비추천 (<span id="decommend_count"></span>)</li>
+        <ul class="justify-content-end d-flex mb-3" id="post_recommend">
         </ul>
         <form action="/rest/update_board" method="post" name="updateForm" autocomplete="off" onsubmit="return submitUpdatePost(this);">
           <table class="table table-bordered text-left" id="detail_table">
@@ -59,7 +57,7 @@
             <tr>
               <th width="150"><%= id %></th>
               <td>
-                <form action="/rest/write_comment" method="post" class="w-100" name="writeCommentForm" enctype="multipart/form-data" onsubmit="return writeComment(this);">
+                <form class="w-100" name="writeCommentForm" enctype="multipart/form-data" onsubmit="return writeComment(this);">
                   <input type="hidden" name="writer" value="<%= id %>">
                   <input type="hidden" name="post_id" id="post_id">
                   <input type="text" id="comment" name="content" class="form-control rounded-0"

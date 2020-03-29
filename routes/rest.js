@@ -26,8 +26,15 @@ router.post('/write_comment', mt.upload.single("up_cmt_file"), writeComment);
 router.post('/count_views/:post_id', countViews);
 router.get('/recommend_post/:post_id', recommendPost);
 router.get('/decommend_post/:post_id', decommendPost);
+router.get('/has_voted_post/:post_id', hasVotedPost);
+router.get('/has_voted_comment/:post_id/:cmt_id', hasVotedComment);
+router.get('/cancel_recommend_post/:post_id', cancelRecommendPost);
+router.get('/cancel_recommend_comment/:post_id/:cmt_id', cancelRecommendComment);
+router.get('/cancel_decommend_post/:post_id', cancelDecommendPost);
+router.get('/cancel_decommend_comment/:post_id/:cmt_id', cancelDecommendComment);
 router.get('/recommend_comment/:post_id/:cmt_id', recommendComment);
 router.get('/decommend_comment/:post_id/:cmt_id', decommendComment);
+
 
 router.get('/get_board_list/:page', getBoardList);
 router.get('/get_board_post/:idx', getBoardPost);
@@ -137,6 +144,21 @@ const divideFile = async (size, path, name, oriname) => {
   });
 };
 
+const calculatePostScore = () => {
+  const view_point = 1;
+  const post_recommend_point = 3;
+  const post_decommend_point = -1;
+
+}
+
+const calculateCommentScore = () => {
+  const cmt_point = 2;
+  const cmt_img_point = 3;
+  const cmt_recommend_point = 3;
+  const cmt_decommend_point = -1;
+
+
+}
 
 async function writeBoard(req, res, next) {
   const {title, content} = req.body;
@@ -152,9 +174,8 @@ async function writeBoard(req, res, next) {
   info.date = util.convertDate(new Date(), 4);
   info.view = 0;
   info.viewer = [];
-  info.recommended = 0;
-  info.decommended = 0;
-  info.voted = [];
+  info.recommended = [];
+  info.decommended = [];
   info.score = 0;
 
   if (req.file && req.file.size > mb * 10) {
@@ -167,6 +188,7 @@ async function writeBoard(req, res, next) {
     info.savefile = data.file_name;
     fs.unlinkSync(req.file.path);
   }
+
   const no_file = await util.checkFile(boardPath);
   if (no_file) { // board.json 파일이 존재하지 않음
     post.push(info);
@@ -215,36 +237,33 @@ async function countViews(req, res, next) {
 
 async function writeComment(req, res, next) {
   const {post_id, parent_id, content} = req.body;
-  console.log(req.file);
-  console.log(req.body);
   let comment = [];
   const info = {};
   info.post_id = parseInt(post_id);
-  info.parent_id = parent_id == undefined ? 0 : parseInt(parent_id);
+  info.parent_id = parent_id == 'undefined' ? 0 : parseInt(parent_id);
   info.cmt_id = 1;
   info.writer = req.session.user.id;
   info.content = content;
   info.step = 1;
   info.indent = 0;
   info.removed = false;
-  info.recommended = 0;
-  info.decommended = 0;
-  info.voted_id = [];
+  info.recommended = [];
+  info.decommended = [];
   info.date = util.convertDate(new Date(), 4);
   info.orifile = req.file ? req.file.originalname : '';
   info.savefile = req.file ? req.file.filename : '';
 
   if (!req.session.user) {
-    res.send(util.alertLocation({msg: "잘못된 접근입니다.", loc: "/"}));
+    res.send({code: 404});
     return;
   }
+
   const no_file = await util.checkFile(commentPath);
   if (no_file) { // 파일이 없으면
     comment.push(info);
     const createdFile = await util.writeFile(commentPath, comment); // content를 넣어서 파일 생성
     if (!createdFile) console.log("파일쓰기 실패");
-    res.send(util.alertLocation({msg: "댓글이 등록되었습니다.", loc: "/"}));
-    return;
+    res.send({code: 200});
   }
   else { // 파일이 있으면
     const content = await util.getFileContent(commentPath);
@@ -252,8 +271,7 @@ async function writeComment(req, res, next) {
       comment.push(info);
       const createdComment = await util.writeFile(commentPath, comment);
       if (!createdComment) console.log("파일쓰기 실패");
-      res.send(util.alertLocation({msg: "댓글이 등록되었습니다.", loc: "/"}));
-      return;
+      res.send({code: 200});
     }
     else { // 파일 있음 & 내용 있음
       comment = await util.getFileContent(commentPath);
@@ -288,9 +306,40 @@ async function writeComment(req, res, next) {
       if (!createdComment) {
         console.log("파일쓰기 실패");
       } else {
-        res.send(util.alertLocation({msg: "댓글이 등록되었습니다.", loc: "/"}));
+        res.send({code: 200});
       }
     }
+  }
+}
+
+async function hasVotedPost(req, res, next) {
+  const post_id = req.params.post_id;
+  const user_id = req.session.user.id;
+
+  const data = await util.getFileContent(boardPath);
+  if(!data) console.error(data);
+
+  const target_post = data.find(v => v.idx == post_id);
+  if(target_post.recommended.indexOf(user_id) >= 0 || target_post.decommended.indexOf(user_id) >= 0) {
+    res.send(true);
+  } else {
+    res.send(false);
+  }
+}
+
+async function hasVotedComment(req, res, next) {
+  const post_id = req.params.post_id;
+  const cmt_id = req.params.cmt_id;
+  const user_id = req.session.user.id;
+
+  const data = await util.getFileContent(commentPath);
+  if(!data) console.error(data);
+
+  const target_cmt = data.filter(v => v.post_id == post_id).find(v => v.cmt_id == cmt_id);
+  if(target_cmt.recommended.indexOf(user_id) >= 0 || target_cmt.decommended.indexOf(user_id) >= 0) {
+    res.send(true);
+  } else {
+    res.send(false);
   }
 }
 
@@ -302,14 +351,12 @@ async function recommendPost(req, res, next) {
   if(!data) console.error(data);
 
   const target_post = data.find(v => v.idx == post_id);
-  if(target_post.voted.indexOf(user_id) !== -1) {
+  if(target_post.recommended.indexOf(user_id) !== -1) {
     res.send({code: 400});
   } else {
-    target_post.recommended += 1;
     data.map(v => {
-      if(v.idx === post_id) {
-        v.recommended += 1;
-        v.voted.push(user_id);
+      if(v.idx == post_id) {
+        v.recommended.push(user_id);
       }
     });
     const updatedFile = await util.writeFile(boardPath, data);
@@ -326,20 +373,94 @@ async function decommendPost(req, res, next) {
   if(!data) console.error(data);
 
   const target_post = data.find(v => v.idx == post_id);
-  if(target_post.voted.indexOf(user_id) !== -1) {
+  if(target_post.decommended.indexOf(user_id) !== -1) {
     res.send({code: 400});
   } else {
-    target_post.recommended += 1;
     data.map(v => {
-      if(v.idx === post_id) {
-        v.decommended += 1;
-        v.voted.push(user_id);
+      if(v.idx == post_id) {
+        v.decommended.push(user_id);
       }
     });
     const updatedFile = await util.writeFile(boardPath, data);
     if(!updatedFile) console.error(updatedFile);
     res.send({code: 200});
   }
+}
+
+async function cancelRecommendPost(req, res, next) {
+  const post_id = req.params.post_id;
+  const user_id = req.session.user.id;
+  const data = await util.getFileContent(boardPath);
+  const target_post = data.find(v => v.idx == post_id);
+  if(target_post.recommended.indexOf(user_id) == -1) {
+    res.send({code: 400});
+    return;
+  }
+  data.map(v => {
+    if(v.idx == post_id) {
+      v.recommended.splice(v.recommended.indexOf(user_id), 1);
+    }
+  });
+  const updatedFile = await util.writeFile(boardPath, data);
+  if(!updatedFile) console.error(updatedFile);
+  res.send({code: 200});
+}
+
+async function cancelRecommendComment(req, res, next) {
+  const {post_id, cmt_id} = req.params;
+  const user_id = req.session.user.id;
+  const data = await util.getFileContent(commentPath);
+  const target_cmt = data.filter(v => v.post_id == post_id && v.cmt_id == cmt_id);
+  if(target_cmt[0].recommended.indexOf(user_id) == -1) {
+    res.send({code: 400});
+    return;
+  }
+  data.map(v => {
+    if(v.post_id == post_id && v.cmt_id == cmt_id) {
+      v.recommended.splice(v.recommended.indexOf(user_id), 1);
+    }
+  });
+  const updatedFile = await util.writeFile(commentPath, data);
+  if(!updatedFile) console.error(updatedFile);
+  res.send({code: 200});
+}
+
+async function cancelDecommendPost(req, res, next) {
+  const post_id = req.params.post_id;
+  const user_id = req.session.user.id;
+  const data = await util.getFileContent(boardPath);
+  const target_post = data.find(v => v.idx == post_id);
+  if(target_post.decommended.indexOf(user_id) == -1) {
+    res.send({code: 400});
+    return;
+  }
+  data.map(v => {
+    if(v.idx == post_id) {
+      v.decommended.splice(v.decommended.indexOf(user_id), 1);
+    }
+  });
+  const updatedFile = await util.writeFile(boardPath, data);
+  if(!updatedFile) console.error(updatedFile);
+  res.send({code: 200});
+}
+
+async function cancelDecommendComment(req, res, next) {
+  const {post_id, cmt_id} = req.params;
+  const user_id = req.session.user.id;
+  const data = await util.getFileContent(commentPath);
+  const target_cmt = data.filter(v => v.post_id == post_id && v.cmt_id == cmt_id);
+  if(target_cmt[0].decommended.indexOf(user_id) == -1) {
+    res.send({code: 400});
+    return;
+  }
+  data.map(v => {
+    if(v.post_id == post_id && v.cmt_id == cmt_id) {
+      v.decommended.splice(v.decommended.indexOf(user_id), 1);
+    }
+  });
+  const updatedFile = await util.writeFile(commentPath, data);
+  if(!updatedFile) console.error(updatedFile);
+  res.send({code: 200});
 }
 
 async function recommendComment(req, res, next) {
@@ -349,16 +470,15 @@ async function recommendComment(req, res, next) {
   let data = await util.getFileContent(commentPath);
   if (!data) console.error(data);
 
-  const target = data.find(v => v.post_id === post_id && v.cmt_id === cmt_id);
-  if (target.voted_id.indexOf(id) !== -1) {
+  const target = data.find(v => v.post_id == post_id && v.cmt_id == cmt_id);
+  if (target.recommended.indexOf(id) !== -1) {
     res.json({code: 400});
     return;
   }
 
   data.map(v => {
     if (v.post_id == post_id && v.cmt_id == cmt_id) {
-      v.recommended += 1;
-      v.voted_id.push(id);
+      v.recommended.push(id);
     }
   });
 
@@ -378,15 +498,14 @@ async function decommendComment(req, res, next) {
   if (!data) console.err(data);
 
   const target = data.find(v => v.post_id == post_id && v.cmt_id == cmt_id);
-  if (target.voted_id.indexOf(id) !== -1) {
+  if (target.decommended.indexOf(id) !== -1) {
     res.json({code: 400});
     return;
   }
 
   data.map(v => {
     if (v.post_id == post_id && v.cmt_id == cmt_id) {
-      v.decommended += 1;
-      v.voted_id.push(id);
+      v.decommended.push(id);
     }
   });
 

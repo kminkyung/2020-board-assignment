@@ -44,7 +44,7 @@ function showMemberList() {
                       <th>이름</th>
                       <th>이메일</th>
                       <th width="110">등급</th>
-                      <th>관리</th>
+                      <th width="100">관리</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -83,11 +83,10 @@ async function drawBoard(page) {
   const showmore_btn_code = `<div class="text-center"><button type="button" class="btn btn-secondary rounded-0" id="btnShowMore" onclick="drawBoard(${page + 1})">더 보기</button></div>`;
   const data = await getBoardList(page);
   console.log(data);
-  // $("#board_list_table tbody").empty();
   if (data.list.length == 0) {
     $("#board_list_table tbody").append(`<tr><td colspan="9">게시글이 없습니다.</td></tr>`);
   } else {
-    const tbody_code = data.list.map(v => `<tr class="pointer" onclick="showDetailModal(this);">
+    const tbody_code = data.list.map(v => `<tr class="pointer" onclick="showDetailModal(${v.idx});">
                                             <td data-idx="${v.idx}">${v.idx}</td>
                                             <td>${v.id}</td>
                                             <td>${v.title} ${v.cmt_count !== 0 ? `<span class="badge badge-pill badge-dark">${v.cmt_count}</span>` : ''}</td>
@@ -224,8 +223,7 @@ $("#board_detail_modal").on("hide.bs.modal", function(e) {
   showBoard(0);
 });
 
-function showDetailModal(tr) {
-  const idx = $(tr).children("td:first-child").data("idx");
+function showDetailModal(idx) {
   const modal = $("#board_detail_modal");
   getBoardPost(idx, function (data) {
     modal.find("#userid").text(data.id);
@@ -235,8 +233,14 @@ function showDetailModal(tr) {
     modal.find("#date").text(data.date);
     modal.find("#title").text(data.title);
     modal.find("#content").text(data.content);
-    modal.find("#recommend_count").text(data.recommended);
-    modal.find("#decommend_count").text(data.decommended);
+
+    const recommand_code = ` <li class="mr-3 text-info pointer" onclick="checkRecommendation('post', ${data.idx});">
+                              <span>👍🏻</span>추천 (<span id="recommend_count">${data.recommended.length}</span>)
+                             </li>
+                            <li class="text-danger pointer" onclick="checkDecommendation('post', ${data.idx});">
+                              <span>👎🏻</span>비추천 (<span id="decommend_count">${data.decommended.length}</span>)
+                            </li>`;
+    $("#post_recommend").html(recommand_code);
 
     if (data.orifile !== "") {
       data.orifile = data.orifile.split(" ");
@@ -264,10 +268,10 @@ function showDetailModal(tr) {
                                   <td class="indent-${v.indent} position-relative">
                                     <p>${!v.removed ? v.content : `<span class="f-0875 font-italic text-secondary">댓글이 삭제되었습니다.</span>`}
                                    </p>
-                                   ${v.savefile !== '' ? `<a href="/upload/${v.savefile}" class="img-container"><img src="/upload/${v.savefile}" alt="" class="cmt-img"></a>` : ''}
+                                   ${v.savefile !== '' && !v.removed ? `<a href="/upload/${v.savefile}" class="img-container"><img src="/upload/${v.savefile}" alt="" class="cmt-img"></a>` : ''}
                                    <ul class="recommend-box">
-                                    <li class="pointer" onclick="recommendComment(this);">👍🏻<span class="f-0875 text-info">${v.recommended}</span></li>
-                                    <li class="pointer" onclick="decommendComment(this);">👎🏻<span class="f-0875 text-danger">${v.not_recommended}</span></li>
+                                    <li class="pointer" onclick="checkRecommendation('comment', ${idx}, ${v.cmt_id});">👍🏻<span class="f-0875 text-info">${v.recommended.length}</span></li>
+                                    <li class="pointer" onclick="checkDecommendation('comment', ${idx}, ${v.cmt_id});">👎🏻<span class="f-0875 text-danger">${v.decommended.length}</span></li>
                                    </ul>
                                   </td>
                                   <td>
@@ -355,11 +359,140 @@ function cancelModifyComment(t) {
   $("input[name='modify_cmt_input']").remove();
 }
 
-function recommendPost(t) {
-  if (!confirm("이 게시글을 추천하시겠습니까?")) {
-    return;
+async function checkRecommendation(type, post_id, cmt_id) {
+  if(type == 'post') {
+    const voted = await hasVotedPost(post_id);
+    if (!voted) {
+      recommendPost(post_id);
+    } else {
+      cancelRecommendPost(post_id);
+    }
+  } else {
+    const voted = await hasVotedComment(post_id, cmt_id);
+    if(!voted) {
+      recommendComment(post_id, cmt_id);
+    } else {
+      cancelRecommendComment(post_id, cmt_id);
+    }
   }
-  const post_id = $(t).parents("#board_detail_modal").find("input[name='idx']").val();
+}
+
+async function checkDecommendation(type, post_id, cmt_id) {
+  if(type == 'post') {
+    const voted = await hasVotedPost(post_id);
+    if (!voted) {
+      decommendPost(post_id);
+    } else {
+      cancelDecommendPost(post_id);
+    }
+  } else {
+    const voted = await hasVotedComment(post_id, cmt_id);
+    if(!voted) {
+      decommendComment(post_id, cmt_id);
+    } else {
+      cancelDecommendComment(post_id, cmt_id);
+    }
+  }
+}
+
+function hasVotedPost(post_id) {
+  return new Promise((resolve, reject) => {
+    $.ajax({
+      type: 'get',
+      url: `/rest/has_voted_post/${post_id}`,
+      error: function (err) {
+        reject(err);
+      },
+      success: (res) => {
+        resolve(res);
+      }
+    })
+  })
+}
+function hasVotedComment(post_id, cmt_id) {
+  return new Promise((resolve, reject) => {
+    $.ajax({
+      type: 'get',
+      url: `/rest/has_voted_comment/${post_id}/${cmt_id}`,
+      error: function (err) {
+        reject(err);
+      },
+      success: (res) => {
+        resolve(res);
+      }
+    })
+  })
+}
+
+function cancelRecommendPost(post_id) {
+  $.ajax({
+    type: 'get',
+    url: `/rest/cancel_recommend_post/${post_id}`,
+    error: function (err) {
+      console.log(err);
+    },
+    success: function (res) {
+      if (res.code == 400) {된
+        alert("게시글당 추천 또는 비추천은 한번만 할 수 있습니다.");
+      } else if (res.code == 200) {
+        showDetailModal(post_id);
+      }
+    }
+  });
+}
+
+function cancelRecommendComment(post_id, cmt_id) {
+  $.ajax({
+    type: 'get',
+    url: `/rest/cancel_recommend_comment/${post_id}/${cmt_id}`,
+    error: function (err) {
+      console.log(err);
+    },
+    success: function (res) {
+      if (res.code == 400) {
+        alert("댓글당 추천 또는 비추천은 한번만 할 수 있습니다.");
+      } else if (res.code == 200) {
+        showDetailModal(post_id);
+      }
+    }
+  });
+}
+
+function cancelDecommendComment(post_id, cmt_id) {
+  $.ajax({
+    type: 'get',
+    url: `/rest/cancel_decommend_comment/${post_id}/${cmt_id}`,
+    error: function (err) {
+      console.log(err);
+    },
+    success: function (res) {
+      if (res.code == 400) {
+        alert("댓글당 추천 또는 비추천은 한번만 할 수 있습니다.");
+      } else if (res.code == 200) {
+        showDetailModal(post_id);
+      }
+    }
+  });
+}
+
+function cancelDecommendPost(post_id) {
+  $.ajax({
+    type: 'get',
+    url: `/rest/cancel_decommend_post/${post_id}`,
+    error: function (err) {
+      console.log(err);
+    },
+    success: function (res) {
+      if (res.code == 400) {
+        alert("게시글당 추천 또는 비추천은 한번만 할 수 있습니다.");
+      } else if (res.code == 200) {
+        showDetailModal(post_id);
+      }
+    }
+  });
+}
+
+function recommendPost(post_id) {
   $.ajax({
     type: 'get',
     url: `/rest/recommend_post/${post_id}`,
@@ -368,48 +501,34 @@ function recommendPost(t) {
     },
     success: function (res) {
       if (res.code == 400) {
-        alert("게시글 당 추천 또는 비추천은 한번만 할 수 있습니다.");
+        alert("게시글당 추천 또는 비추천은 한번만 할 수 있습니다.");
       } else if (res.code == 200) {
-        alert("게시글을 추천했습니다.");
-        location.href = '/';
+        showDetailModal(post_id);
       }
     }
   });
 }
 
-function decommendPost(t) {
-  if (!confirm("이 게시글을 비추천하시겠습니까?")) {
-    return;
-  } else {
-    const post_id = $(t).parents("#board_detail_modal").find("input[name='idx']").val();
-
-    $.ajax({
-      type: 'get',
-      url: `/rest/decommend_post/${post_id}`,
-      error: function (err) {
-        console.log(err);
-      },
-      success: function (res) {
-        if (res.code == 400) {
-          alert("게시글당 추천 또는 비추천은 한번만 할 수 있습니다.");
-        } else if (res.code == 200) {
-          alert("게시글을 비추천했습니다.");
-          location.href = '/';
-        }
+function decommendPost(post_id) {
+  $.ajax({
+    type: 'get',
+    url: `/rest/decommend_post/${post_id}`,
+    error: function (err) {
+      console.log(err);
+    },
+    success: function (res) {
+      if (res.code == 400) {
+        alert("게시글당 추천 또는 비추천은 한번만 할 수 있습니다.");
+      } else if (res.code == 200) {
+        showDetailModal(post_id);
       }
-    });
-  }
+    }
+  });
 }
 
 
 
-function recommendComment(t) {
-  if (!confirm("이 댓글을 추천하시겠습니까?")) {
-    return;
-  }
-  const post_id = $(t).parents("#board_detail_modal").find("input[name='idx']").val();
-  const cmt_id = $(t).parents("tr").data("idx");
-
+function recommendComment(post_id, cmt_id) {
   $.ajax({
     type: 'get',
     url: `/rest/recommend_comment/${post_id}/${cmt_id}`,
@@ -420,36 +539,27 @@ function recommendComment(t) {
       if (res.code == 400) {
         alert("댓글당 추천 또는 비추천은 한번만 할 수 있습니다.");
       } else if (res.code == 200) {
-        alert("댓글을 추천했습니다.");
-        location.href = '/';
+        showDetailModal(post_id);
       }
     }
   });
 }
 
-function decommendComment(t) {
-  if (!confirm("이 댓글을 비추천하시겠습니까?")) {
-    return;
-  } else {
-    const post_id = $(t).parents("#board_detail_modal").find("input[name='idx']").val();
-    const cmt_id = $(t).parents("tr").data("idx");
-
-    $.ajax({
-      type: 'get',
-      url: `/rest/decommend_comment/${post_id}/${cmt_id}`,
-      error: function (err) {
-        console.log(err);
-      },
-      success: function (res) {
-        if (res.code == 400) {
-          alert("댓글당 추천 또는 비추천은 한번만 할 수 있습니다.");
-        } else if (res.code == 200) {
-          alert("댓글을 비추천했습니다.");
-          location.href = '/';
-        }
+function decommendComment(post_id, cmt_id) {
+  $.ajax({
+    type: 'get',
+    url: `/rest/decommend_comment/${post_id}/${cmt_id}`,
+    error: function (err) {
+      console.log(err);
+    },
+    success: function (res) {
+      if (res.code == 400) {
+        alert("댓글당 추천 또는 비추천은 한번만 할 수 있습니다.");
+      } else if (res.code == 200) {
+        showDetailModal(post_id);
       }
-    });
-  }
+    }
+  });
 }
 
 function removeComment(t) {
@@ -470,7 +580,7 @@ function removeComment(t) {
           location.href = '/';
         } else if (res.code == 200) {
           alert("댓글이 삭제되었습니다.");
-          location.href = '/';
+          showDetailModal(post_id);
         }
       }
     });
@@ -513,19 +623,16 @@ function submitCommentForm(t) {
 }
 
 function submitBoardForm() {
-  console.log("아아아아아ㅏ아아아악아악");
   // event.preventDefault();
   const title = $("#write_table").find("input[name='title']").val().trim();
   const content = $("#write_table").find("textarea[name='content']").val().trim();
   const file = $("#write_table").find("input[name='upfile']")[0].files[0];
 
   if (title == '') {
-    console.log(">>>>>>>");
     alert("제목을 입력해주세요.");
     return false;
   }
   if (content == '') {
-    console.log("????????");
     alert("내용을 입력해주세요.");
     return false;
   }
@@ -540,6 +647,7 @@ function submitBoardForm() {
 
 function writeComment(form) {
   event.stopPropagation();
+  event.preventDefault();
 
   const post_id = $(form).parents("#board_detail_modal").find("input[name='idx']").val();
   const content = $(form).find("input[type='text']").val();
@@ -550,7 +658,6 @@ function writeComment(form) {
   // 대댓글인 경우
   const parent_id = $(form).parents("tr").prev().data("idx");
   $("input[name='parent_id']").val(parent_id);
-
 
   if (cmt_file !== undefined) {
     file_size = cmt_file.size;
@@ -565,7 +672,35 @@ function writeComment(form) {
     $("#comment").focus();
     return false;
   }
-  return true;
+
+  const formData = new FormData();
+  formData.append('post_id', post_id);
+  formData.append('parent_id', parent_id);
+  formData.append('content', content);
+  formData.append('up_cmt_file', $("#up_cmt_file")[0].files[0]);
+
+  console.log("formData", formData);
+
+  $.ajax({
+    method: 'post',
+    url: 'rest/write_comment',
+    data: formData,
+    processData: false,
+    contentType: false,
+    error: function (err) {
+      console.log(err);
+    },
+    success: function(res) {
+      if(res.code == 404) {
+        alert("잘못된 접근입니다.");
+        return;
+      }
+      if(res.code == 200) {
+        showDetailModal(post_id);
+      }
+    }
+  });
+  return false;
 }
 
 

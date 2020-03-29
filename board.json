@@ -1,7 +1,7 @@
 [
   {
     "idx": 1,
-    "id": "abcdefg11",
+    "id": "administrator",
     "title": "1",
     "content": "1",
     "orifile": "",
@@ -9,14 +9,13 @@
     "date": "2020년 3월 29일",
     "view": 0,
     "viewer": [],
-    "recommended": 0,
-    "decommended": 0,
-    "voted": [],
+    "recommended": [],
+    "decommended": [],
     "score": 0
   },
   {
     "idx": 2,
-    "id": "abcdefg11",
+    "id": "administrator",
     "title": "2",
     "content": "2",
     "orifile": "",
@@ -24,14 +23,13 @@
     "date": "2020년 3월 29일",
     "view": 0,
     "viewer": [],
-    "recommended": 0,
-    "decommended": 0,
-    "voted": [],
+    "recommended": [],
+    "decommended": [],
     "score": 0
   },
   {
     "idx": 3,
-    "id": "abcdefg11",
+    "id": "administrator",
     "title": "3",
     "content": "3",
     "orifile": "",
@@ -39,9 +37,8 @@
     "date": "2020년 3월 29일",
     "view": 0,
     "viewer": [],
-    "recommended": 2,
-    "decommended": 0,
-    "voted": [],
+    "recommended": [],
+    "decommended": [],
     "score": 0
   }
 ]
