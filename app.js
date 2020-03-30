@@ -13,6 +13,15 @@ const store = require("session-file-store")(session);
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 
+app.set("etag", false);
+
+app.use(session({
+  secret: 'My Password Key',
+  resave: false,
+  saveUninitialized: true,
+  store: new store()
+}));
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(logger('dev'));
@@ -20,12 +29,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(session({
-  secret: 'My Password Key',
-  resave: false,
-  saveUninitialized: true,
-  store: new store()
-}));
+
 
 
 // const indexRouter = require('./routes/index');
@@ -41,11 +45,13 @@ app.use('/signup', signUpRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
+  console.log("~~~~~~~~~~~~0");
   next(createError(404));
 });
 
 // error handler
 app.use(function(err, req, res, next) {
+  console.log("~~~~~~~~~~~~1", req.url);
   // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};
@@ -53,6 +59,7 @@ app.use(function(err, req, res, next) {
   // render the error page
   res.status(err.status || 500);
   res.render('error');
+  console.log("~~~~~~~~~~~~2");
 });
 
 

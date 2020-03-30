@@ -19,6 +19,7 @@ router.get('/download/', downFile);
 
 /* main login page */
 function getMainPage(req, res, next) {
+  console.log(req.session.user);
   if(req.session.user) {
     loginUser = req.session.user;
     res.render('home', loginUser);
@@ -57,6 +58,7 @@ async function loginMember (req, res, next) {
         };
         loginUser = req.session.user;
         res.render('home', loginUser);
+        return;
       }
     }
   }

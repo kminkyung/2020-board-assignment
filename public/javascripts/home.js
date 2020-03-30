@@ -143,8 +143,8 @@ function showBoard(page) {
                       <th>내용</th>
                       <th width="50">파일</th>
                       <th>작성일</th>
-                      <th width="60">인기도</th>
-                      <th width="60">조회수</th>
+                      <th width="70">인기도</th>
+                      <th width="70">조회수</th>
                       <th width="70">관리</th>
                     </tr>
                     </thead>
@@ -197,7 +197,6 @@ function confirmRemovePost(t) {
   const idx = $(t).parents("tr").children("td:first-child").data("idx");
   if (confirm("정말로 삭제하시겠습니까?")) {
     removePost(idx, function (res) {
-      console.log(res);
       if (res.code !== 200) {
         alert("권한이 없습니다.");
         return;
@@ -732,7 +731,6 @@ function getSortQuery() {
   else if(criteria == "by_score") {
     query_str = '?sort=score';
   }
-  console.log(query_str);
   return query_str;
 }
 

@@ -36,10 +36,43 @@ router.get('/cancel_decommend_comment/:post_id/:cmt_id', cancelDecommendComment)
 router.get('/recommend_comment/:post_id/:cmt_id', recommendComment);
 router.get('/decommend_comment/:post_id/:cmt_id', decommendComment);
 
+const wrapper = asyncFn => {
+	return (async (req, res, next) => {
+		try {
+			return await asyncFn(req, res, next);
+		} catch (error) {
+			return next(error);
+		}
+	});
+};
 
-router.get('/get_board_list/:page', getBoardList);
-router.get('/get_board_post/:idx', getBoardPost);
-router.get('/get_board_comment/:idx', getBoardComment);
+//router.get('/get_board_list/:page', getBoardList);
+router.get('/get_board_list/:page', async (req, res, next) => {
+    const result = await getBoardList(req, res);
+    res.statusCode = 200;
+    res.json(result);
+});
+
+//router.get('/get_board_post/:idx', getBoardPost);
+//router.get('/get_board_comment/:idx', getBoardComment);
+
+router.get('/get_board_post/:idx', async (req, res, next) => {
+  try {
+    const result = await getBoardPost(req, res);
+    res.statusCode = 200;
+    res.json(result);
+  } catch (e) {
+    console.log("~~~~~~~~~~~~~~~~~~~~~ ", e);
+    res.statusCode = 404;
+    res.json({});
+  }
+  
+});
+router.get('/get_board_comment/:idx', async (req, res, next) => {
+    const result = await getBoardComment(req, res);
+    res.statusCode = 200;
+    res.json(result);
+});
 
 router.post('/update_board', updateBoardPost);
 router.post('/remove_board_post/:idx', removeBoardPost);
@@ -84,7 +117,7 @@ async function updatePassword(req, res, next) {
     res.send({code: 401});
     return;
   }
-  let result = await util.writeFile(memberFile, memData)
+  let result = await util.writeFile(memberFile, memData);
   if (!result) console.error(result);
   res.send({code: 200});
 }
@@ -251,14 +284,16 @@ async function writeComment(req, res, next) {
     const createdFile = await util.writeFile(commentPath, comment); // content를 넣어서 파일 생성
     if (!createdFile) console.log("파일쓰기 실패");
     res.send({code: 200});
-  } else { // 파일이 있으면
+  }
+  else { // 파일이 있으면
     const content = await util.getFileContent(commentPath);
     if (content == '') { // 파일 있음 & 내용 없음
       comment.push(info);
       const createdComment = await util.writeFile(commentPath, comment);
       if (!createdComment) console.log("파일쓰기 실패");
       res.send({code: 200});
-    } else { // 파일 있음 & 내용 있음
+    }
+    else { // 파일 있음 & 내용 있음
       comment = await util.getFileContent(commentPath);
 
       let non_post_comments = comment.filter(v => v.post_id !== info.post_id); // 같은 게시글이 아닌 경우
@@ -267,7 +302,8 @@ async function writeComment(req, res, next) {
       if (post_comments.length !== 0) {
         info.cmt_id = post_comments.sort((a, b) => b.cmt_id - a.cmt_id)[0].cmt_id + 1;
       }
-
+      
+      // 아직 작업중.....................................
       post_comments.map(v => {
         if (v.parent_id == info.parent_id && v.step >= info.step) {
           console.log("info랑 부모가 같은 애들", v.cmt_id);
@@ -360,7 +396,8 @@ async function decommendPost(req, res, next) {
   const target_post = data.find(v => v.idx == post_id);
   if (target_post.decommended.indexOf(user_id) !== -1) {
     res.send({code: 400});
-  } else {
+  }
+  else {
     data.map(v => {
       if (v.idx == post_id) {
         v.decommended.push(user_id);
@@ -503,18 +540,27 @@ async function decommendComment(req, res, next) {
 async function getBoardPost(req, res, next) {
   const idx = req.params.idx;
   let data = await util.getFileContent(boardPath);
-  if (!data) console.error(data);
+  if (!data) {
+    console.error(data);
+    return;
+  }
   const post = data.filter(v => v.idx == idx);
-  res.json(post[0]);
+  //res.json(post[0]);
+  //res.statusCode = 200;
+	//res.send(post[0]);
+  return post[0];
 }
 
 async function getBoardComment(req, res, next) {
   const idx = req.params.idx;
   let data = await util.getFileContent(commentPath);
-  if (!data) console.err(data);
+  if (!data) console.error(data);
   const comments = data.filter(v => v.post_id == idx);
   comments.sort((a, b) => a.parent_id - b.parent_id).sort((a, b) => a.step - b.step);
-  res.json(comments);
+  //res.json(comments);
+  //res.statusCode = 200;
+	//res.send(comments);
+  return comments;
 }
 
 async function getBoardList(req, res, next) {
@@ -542,20 +588,18 @@ async function getBoardList(req, res, next) {
   // 댓글 갯수 구해주는 부분
   let comments = await util.getFileContent(commentPath);
   if (!comments) console.error(comments);
-
+  
+  
   for (let i = 0; i < data.length; i++) {
     data[i].cmt_count = 0;
+    data[i].score += await calculatePostScore(data[i]);
     for (let j = 0; j < comments.length; j++) {
-      data[i].score += await calculatePostScore(data[i]);
-      if (data[i].idx == comments[j].post_id) {
-        if (comments[j].removed !== true) {
-          data[i].cmt_count++;
-          data[i].score += await calculateCommentScore(comments[j]);
-        }
+      if (data[i].idx == comments[j].post_id && comments[j].removed !== true) {
+        data[i].cmt_count++;
+        data[i].score += await calculateCommentScore(comments[j]);
       }
     }
   }
-
 
   if (page + 1 < page_count) is_next = true;
 
@@ -570,7 +614,10 @@ async function getBoardList(req, res, next) {
   result.list = list;
   result.is_next = is_next;
 
-  res.json(result);
+  return result;
+  //res.json(result);
+  //res.statusCode = 200;
+  //res.send(result);
 }
 
 async function calculatePostScore(obj) {
@@ -627,11 +674,14 @@ async function removeBoardPost(req, res, next) {
   let result = await util.writeFile(boardPath, data);
   if (!result) console.error(result);
 
+  // 종속된 댓글 삭제
   const comments = await util.getFileContent(commentPath);
   if (!comments) console.error(comments);
-  const notRevTargets = comments.filter(v.post_id !== idx);
+  console.log('idx', idx);
+  const notRevTargets = comments.filter(v => v.post_id != idx);
+  console.log('notRevTargets', notRevTargets);
 
-  const updatedComment = await util.writeFile(comments, notRevTargets);
+  const updatedComment = await util.writeFile(commentPath, notRevTargets);
   if (!updatedComment) console.error(updatedComment);
 
   res.send({code: 200});
