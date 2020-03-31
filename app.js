@@ -8,12 +8,18 @@ const app = express();
 const session = require('express-session');
 const store = require("session-file-store")(session);
 
+app.all("*", function(req, res, next) {
+  res.header("Cache-Control", "no-cache, no-store, must-revalidate");
+  res.header("Pragma", "no-cache");
+  res.header("Expires", 0);
+  next();
+})
+
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 
-app.set("etag", false);
 
 app.use(session({
   secret: 'My Password Key',
@@ -22,6 +28,8 @@ app.use(session({
   store: new store()
 }));
 
+
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(logger('dev'));
@@ -29,7 +37,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
-
 
 
 // const indexRouter = require('./routes/index');
