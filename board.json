@@ -1,1 +1,32 @@
-[{"idx":1,"id":"administrator","title":"1","content":"1","orifile":"","savefile":"","date":"2020년 3월 30일","view":0,"viewer":[],"recommended":[],"decommended":[],"score":0},{"idx":2,"id":"administrator","title":"2","content":"2","orifile":"","savefile":"","date":"2020년 3월 30일","view":0,"viewer":[],"recommended":[],"decommended":["administrator"],"score":0},{"idx":3,"id":"administrator","title":"3","content":"3","orifile":"","savefile":"","date":"2020년 3월 30일","view":0,"viewer":[],"recommended":[],"decommended":[],"score":0}]
+[
+  {
+    "idx": 1,
+    "id": "administrator",
+    "title": "1",
+    "content": "1",
+    "orifile": "",
+    "savefile": "",
+    "date": "2020년 3월 29일",
+    "view": 0,
+    "viewer": [],
+    "recommended": [],
+    "decommended": [],
+    "score": 0
+  },
+  {
+    "idx": 2,
+    "id": "administrator",
+    "title": "22",
+    "content": "222",
+    "orifile": "",
+    "savefile": "",
+    "date": "2020년 3월 29일",
+    "view": 0,
+    "viewer": [],
+    "recommended": [],
+    "decommended": [
+      "administrator"
+    ],
+    "score": 0
+  }
+]

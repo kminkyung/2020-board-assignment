@@ -36,43 +36,10 @@ router.get('/cancel_decommend_comment/:post_id/:cmt_id', cancelDecommendComment)
 router.get('/recommend_comment/:post_id/:cmt_id', recommendComment);
 router.get('/decommend_comment/:post_id/:cmt_id', decommendComment);
 
-const wrapper = asyncFn => {
-	return (async (req, res, next) => {
-		try {
-			return await asyncFn(req, res, next);
-		} catch (error) {
-			return next(error);
-		}
-	});
-};
 
-//router.get('/get_board_list/:page', getBoardList);
-router.get('/get_board_list/:page', async (req, res, next) => {
-    const result = await getBoardList(req, res);
-    res.statusCode = 200;
-    res.json(result);
-});
-
-//router.get('/get_board_post/:idx', getBoardPost);
-//router.get('/get_board_comment/:idx', getBoardComment);
-
-router.get('/get_board_post/:idx', async (req, res, next) => {
-  try {
-    const result = await getBoardPost(req, res);
-    res.statusCode = 200;
-    res.json(result);
-  } catch (e) {
-    console.log("~~~~~~~~~~~~~~~~~~~~~ ", e);
-    res.statusCode = 404;
-    res.json({});
-  }
-  
-});
-router.get('/get_board_comment/:idx', async (req, res, next) => {
-    const result = await getBoardComment(req, res);
-    res.statusCode = 200;
-    res.json(result);
-});
+router.get('/get_board_list/:page', getBoardList);
+router.get('/get_board_post/:idx', getBoardPost);
+router.get('/get_board_comment/:idx', getBoardComment);
 
 router.post('/update_board', updateBoardPost);
 router.post('/remove_board_post/:idx', removeBoardPost);
@@ -284,16 +251,14 @@ async function writeComment(req, res, next) {
     const createdFile = await util.writeFile(commentPath, comment); // content를 넣어서 파일 생성
     if (!createdFile) console.log("파일쓰기 실패");
     res.send({code: 200});
-  }
-  else { // 파일이 있으면
+  } else { // 파일이 있으면
     const content = await util.getFileContent(commentPath);
     if (content == '') { // 파일 있음 & 내용 없음
       comment.push(info);
       const createdComment = await util.writeFile(commentPath, comment);
       if (!createdComment) console.log("파일쓰기 실패");
       res.send({code: 200});
-    }
-    else { // 파일 있음 & 내용 있음
+    } else { // 파일 있음 & 내용 있음
       comment = await util.getFileContent(commentPath);
 
       let non_post_comments = comment.filter(v => v.post_id !== info.post_id); // 같은 게시글이 아닌 경우
@@ -302,7 +267,7 @@ async function writeComment(req, res, next) {
       if (post_comments.length !== 0) {
         info.cmt_id = post_comments.sort((a, b) => b.cmt_id - a.cmt_id)[0].cmt_id + 1;
       }
-      
+
       // 아직 작업중.....................................
       post_comments.map(v => {
         if (v.parent_id == info.parent_id && v.step >= info.step) {
@@ -396,8 +361,7 @@ async function decommendPost(req, res, next) {
   const target_post = data.find(v => v.idx == post_id);
   if (target_post.decommended.indexOf(user_id) !== -1) {
     res.send({code: 400});
-  }
-  else {
+  } else {
     data.map(v => {
       if (v.idx == post_id) {
         v.decommended.push(user_id);
@@ -540,27 +504,18 @@ async function decommendComment(req, res, next) {
 async function getBoardPost(req, res, next) {
   const idx = req.params.idx;
   let data = await util.getFileContent(boardPath);
-  if (!data) {
-    console.error(data);
-    return;
-  }
+  if (!data) console.error(data);
   const post = data.filter(v => v.idx == idx);
-  //res.json(post[0]);
-  //res.statusCode = 200;
-	//res.send(post[0]);
-  return post[0];
+  res.json(post[0]);
 }
 
 async function getBoardComment(req, res, next) {
   const idx = req.params.idx;
   let data = await util.getFileContent(commentPath);
-  if (!data) console.error(data);
+  if (!data) console.err(data);
   const comments = data.filter(v => v.post_id == idx);
   comments.sort((a, b) => a.parent_id - b.parent_id).sort((a, b) => a.step - b.step);
-  //res.json(comments);
-  //res.statusCode = 200;
-	//res.send(comments);
-  return comments;
+  res.json(comments);
 }
 
 async function getBoardList(req, res, next) {
@@ -588,8 +543,7 @@ async function getBoardList(req, res, next) {
   // 댓글 갯수 구해주는 부분
   let comments = await util.getFileContent(commentPath);
   if (!comments) console.error(comments);
-  
-  
+
   for (let i = 0; i < data.length; i++) {
     data[i].cmt_count = 0;
     data[i].score += await calculatePostScore(data[i]);
@@ -614,98 +568,110 @@ async function getBoardList(req, res, next) {
   result.list = list;
   result.is_next = is_next;
 
-  return result;
-  //res.json(result);
-  //res.statusCode = 200;
-  //res.send(result);
+  res.json(result);
 }
 
-async function calculatePostScore(obj) {
-  const view_point = 1;
-  const recommend_point = 3;
-  const decommend_point = -1;
-  let score = 0;
+function calculatePostScore(obj) {
+  return new Promise((resolve, reject) => {
+    const view_point = 1;
+    const recommend_point = 3;
+    const decommend_point = -1;
+    let score = 0;
 
-  score += obj.view * view_point;
-  score += obj.recommended.length * recommend_point;
-  score += obj.decommended.length * decommend_point;
-  return score;
+    score += obj.view * view_point;
+    score += obj.recommended.length * recommend_point;
+    score += obj.decommended.length * decommend_point;
+
+    resolve(score);
+  });
 }
 
-async function calculateCommentScore(obj) {
-  const cmt_point = 2;
-  const cmt_img_point = 3;
-  const recommend_point = 3;
-  const decommend_point = -1;
-  let score = 0;
+function calculateCommentScore(obj) {
+  return new Promise((resolve, reject) => {
+    const cmt_point = 2;
+    const cmt_img_point = 3;
+    const recommend_point = 3;
+    const decommend_point = -1;
+    let score = 0;
 
-  if (obj.orifile !== "" && removed == false) {
-    score += cmt_img_point;
-  } else if (obj.removed == false) {
-    score += cmt_point;
-  }
-  score += obj.recommended.length * recommend_point;
-  score += obj.decommended.length * decommend_point;
-  return score;
+    if (obj.orifile !== "" && removed == false) {
+      score += cmt_img_point;
+    } else if (obj.removed == false) {
+      score += cmt_point;
+    }
+    score += obj.recommended.length * recommend_point;
+    score += obj.decommended.length * decommend_point;
+    resolve(score);
+  });
 }
 
 
 async function removeBoardPost(req, res, next) {
   const idx = req.params.idx;
   const {id, grade} = req.session.user;
-  let data = await util.getFileContent(boardPath);
-  if (!data) console.error(data);
-  const removeTarget = data.find(v => v.idx == idx);
-  const removeIndex = data.findIndex(v => v.idx == idx);
-  if (removeTarget.id !== id && grade !== 9) {
-    res.send({code: 401});
-    return;
-  }
 
-  let savefile = removeTarget.savefile;
-  if (savefile !== "") {
-    savefile = savefile.split(" ");
-    savefile.pop();
-    for (let i = 0; i < savefile.length; i++) {
-      fs.unlinkSync(path.join(__dirname, `../public/upload/${savefile[i]}`));
+  try {
+    let data = await util.getFileContent(boardPath);
+    if (!data) console.error(data);
+    const removeTarget = data.find(v => v.idx == idx);
+    const removeIndex = data.findIndex(v => v.idx == idx);
+    if (removeTarget.id !== id && grade !== 9) {
+      res.send({code: 401});
+      return;
     }
+
+    let savefile = removeTarget.savefile;
+    if (savefile !== "") {
+      savefile = savefile.split(" ");
+      savefile.pop();
+      for (let i = 0; i < savefile.length; i++) {
+        fs.unlinkSync(path.join(__dirname, `../public/upload/${savefile[i]}`));
+      }
+    }
+    data.splice(removeIndex, 1);
+    let result = await util.writeFile(boardPath, data);
+    if (!result) console.error(result);
+
+    const comments = await util.getFileContent(commentPath);
+    if (!comments) console.error(comments);
+    const notRevTargets = comments.filter(v => v.post_id !== idx);
+
+    const updatedComment = await util.writeFile(comments, notRevTargets);
+    if (!updatedComment) console.error(updatedComment);
+
+    res.send({code: 200});
+  } catch (e) {
+    console.log(e);
+    res.send(500, {});
   }
-  data.splice(removeIndex, 1);
-  let result = await util.writeFile(boardPath, data);
-  if (!result) console.error(result);
 
-  // 종속된 댓글 삭제
-  const comments = await util.getFileContent(commentPath);
-  if (!comments) console.error(comments);
-  console.log('idx', idx);
-  const notRevTargets = comments.filter(v => v.post_id != idx);
-  console.log('notRevTargets', notRevTargets);
-
-  const updatedComment = await util.writeFile(commentPath, notRevTargets);
-  if (!updatedComment) console.error(updatedComment);
-
-  res.send({code: 200});
 }
 
 async function removeBoardComment(req, res, next) {
   const {post_id, cmt_id} = req.params;
   const {id, grade} = req.session.user;
 
-  let data = await util.getFileContent(commentPath);
-  if (!data) console.error(data);
-  const target = data.find(v => v.post_id == post_id && v.cmt_id == cmt_id);
-  if (target.writer !== id && grade !== 9) {
-    res.send({code: 401});
-    return;
-  }
-  data.map(v => {
-    if (v.post_id == post_id && v.cmt_id == cmt_id) {
-      v.removed = true;
+  try {
+    let data = await util.getFileContent(commentPath);
+    if (!data) console.error(data);
+    const target = data.find(v => v.post_id == post_id && v.cmt_id == cmt_id);
+    if (target.writer !== id && grade !== 9) {
+      res.send({code: 401});
+      return;
     }
-  });
-  const updatedFile = await util.writeFile(commentPath, data);
-  if (!updatedFile) console.error(updatedFile);
-  res.send({code: 200});
+    data.map(v => {
+      if (v.post_id == post_id && v.cmt_id == cmt_id) {
+        v.removed = true;
+      }
+    });
+    const updatedFile = await util.writeFile(commentPath, data);
+    if (!updatedFile) console.error(updatedFile);
+    res.send({code: 200});
+  } catch (e) {
+    console.log(e);
+    res.send(500, {});
+  }
+
 }
 
 

@@ -716,6 +716,9 @@ function writeComment(form) {
       if(res.code == 200) {
         showDetailModal(post_id);
       }
+    },
+    complete: function() {
+      $("input[name='content']").val('');
     }
   });
   return false;
